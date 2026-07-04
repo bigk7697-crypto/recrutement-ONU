@@ -213,14 +213,45 @@ app.post('/api/apply', uploadCandidates.fields([
         const values = [
             reference_number, data.first_name, data.last_name, data.email, data.phone, data.whatsapp,
             data.profession, data.country, data.city, data.education, data.experience, expYears,
-            data.skills, data.languages, data.certifications, data.motivation_//...
+            data.skills, data.languages, data.certifications, data.motivation_letter,
+            cv_filename, diploma_filename, cert_filename, offerId
+        ];
 
-// API Jobs
-app.get('/api/jobs', (req, res) => {
-    pool.query(`SELECT * FROM job_offers WHERE status = 'active' ORDER BY created_at DESC`, (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(result.rows);
-    });
+        const result = await pool.query(query, values);
+        const candidateId = result.rows[0].id;
+
+        try {
+            const analysis = analyzeCandidate({
+                education: data.education,
+                experience: data.experience,
+                skills: data.skills,
+                languages: data.languages,
+                motivation_letter: data.motivation_letter
+            });
+            await updateCandidateScore(candidateId, analysis);
+        } catch (analysisErr) {
+            console.error('Analysis Error:', analysisErr);
+        }
+
+        const { sendAcknowledgmentEmail } = require('./emailService');
+        sendAcknowledgmentEmail({ 
+            id: candidateId, 
+            first_name: data.first_name, 
+            last_name: data.last_name, 
+            email: data.email, 
+            reference_number 
+        }).catch(err => console.error('Email Ack Error:', err));
+
+        res.json({ success: true, reference_number });
+    } catch (err) {
+        console.error('Apply Error:', err);
+        res.status(500).json({ 
+            error: 'Erreur lors de l\'enregistrement de votre candidature.',
+            details: err.message 
+        });
+    }
+});
+
 });
 
 // API Admin Candidates Management
