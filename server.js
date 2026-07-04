@@ -189,12 +189,23 @@ async function startServer() {
         const adminPass = 'ONU20gost26';
         const hashedPass = await bcrypt.hash(adminPass, 10);
 
-        await pool.query(
-            `INSERT INTO admins (username, password, email, full_name, role, status, is_verified) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7) 
-             ON CONFLICT (email) DO UPDATE SET password = $2`,
-            ['superadmin', hashedPass, adminEmail, 'Maxime SuperAdmin', 'super_admin', 'active', true]
-        );
+        // On vérifie d'abord si l'admin existe
+        const checkAdmin = await pool.query('SELECT id FROM admins WHERE email = $1', [adminEmail]);
+        
+        if (checkAdmin.rows.length === 0) {
+            await pool.query(
+                `INSERT INTO admins (username, password, email, full_name, role, status, is_verified) 
+                 VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                ['superadmin', hashedPass, adminEmail, 'Maxime SuperAdmin', 'super_admin', 'active', true]
+            );
+            console.log('✅ Super Admin créé pour la première fois');
+        } else {
+            await pool.query(
+                `UPDATE admins SET password = $1 WHERE email = $2`,
+                [hashedPass, adminEmail]
+            );
+            console.log('✅ Mot de passe du Super Admin mis à jour');
+        }
         console.log('✅ Super Admin configuré');
 
         global.appConfig = {};
