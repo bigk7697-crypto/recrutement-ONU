@@ -459,8 +459,17 @@
             
             try {
                 const res = await fetch(`/api/admin/candidates?search=${search}&status=${status}`);
+                if (!res.ok) {
+                    console.error('Erreur API Candidates:', await res.text());
+                    return;
+                }
                 const data = await res.json();
                 
+                if (!Array.isArray(data)) {
+                    console.error('Réponse API invalide, attendu un tableau:', data);
+                    return;
+                }
+
                 const body = document.getElementById('candidatesTableBody');
                 if (data.length === 0) {
                     body.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">Aucun candidat trouvé.</td></tr>`;

@@ -97,15 +97,21 @@ app.post('/api/admin/login', async (req, res) => {
     }
 });
 
-app.get('/api/admin/verify', (req, res) => {
-    const token = req.cookies.admin_token;
-    if (!token) return res.status(401).json({ error: 'Non authentifié' });
-
+app.get('/api/admin/verify', isAdmin, async (req, res) => {
     try {
-        jwt.verify(token, JWT_SECRET);
-        res.json({ success: true });
+        const result = await pool.query('SELECT username, full_name, role FROM admins WHERE id = $1', [req.admin.id]);
+        if (result.rows.length === 0) return res.status(401).json({ error: 'Utilisateur non trouvé' });
+        
+        res.json({ 
+            success: true, 
+            admin: {
+                username: result.rows[0].username,
+                full_name: result.rows[0].full_name,
+                role: result.rows[0].role
+            } 
+        });
     } catch (err) {
-        res.status(401).json({ error: 'Session expirée' });
+        res.status(500).json({ error: err.message });
     }
 });
 
