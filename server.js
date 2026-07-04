@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const { sendVerificationEmail } = require('./emailService');
+const { analyzeCandidate, updateCandidateScore, getAnalysisStats } = require('./analysisService');
 require('dotenv').config();
 
 // Empêcher le crash de Cloudinary si CLOUDINARY_URL est mal configuré
@@ -206,6 +207,16 @@ app.post('/api/apply', uploadCandidates.fields([
         const result = await pool.query(query, values);
         const candidateId = result.rows[0].id;
 
+        // --- ANALYSE AUTOMATIQUE DU CANDIDAT ---
+        const analysis = analyzeCandidate({
+            education: data.education,
+            experience: data.experience,
+            skills: data.skills,
+            languages: data.languages,
+            motivation_letter: data.motivation_letter
+        });
+        await updateCandidateScore(candidateId, analysis);
+
         // Envoyer l'email de confirmation en arrière-plan
         const { sendAcknowledgmentEmail } = require('./emailService');
         sendAcknowledgmentEmail({ 
@@ -224,8 +235,6 @@ app.post('/api/apply', uploadCandidates.fields([
 });
 
 // API Jobs
-
-
 app.get('/api/jobs', (req, res) => {
     pool.query(`SELECT * FROM job_offers WHERE status = 'active' ORDER BY created_at DESC`, (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -233,7 +242,122 @@ app.get('/api/jobs', (req, res) => {
     });
 });
 
+// API Admin Candidates Management
+app.get('/api/admin/stats', isAdmin, async (req, res) => {
+    try {
+        const stats = await getAnalysisStats();
+        // mapper les noms pour correspondre au frontend
+        res.json({
+            total_candidates: parseInt(stats.total) || 0,
+            pending_candidates: parseInt(stats.review) || 0, // mapping review -> pending
+            accepted_candidates: parseInt(stats.strong_accept) + parseInt(stats.accept),
+            rejected_candidates: parseInt(stats.reject)
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/candidates', isAdmin, async (req, res) => {
+    const { search, status } = req.query;
+    try {
+        let query = `SELECT c.*, j.title as job_title FROM candidates c 
+                     LEFT JOIN job_offers j ON c.offer_id = j.id WHERE 1=1`;
+        const values = [];
+
+        if (search) {
+            values.push(`%${search}%`);
+            query += ` AND (c.first_name ILIKE $${values.length} OR c.last_name ILIKE $${values.length} OR c.profession ILIKE $${values.length})`;
+        }
+
+        if (status && status !== 'all') {
+            values.push(status);
+            query += ` AND c.status = $${values.length}`;
+        }
+
+        query += ` ORDER BY c.created_at DESC`;
+        const result = await pool.query(query, values);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/candidates/:id', isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM candidates WHERE id = $1', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Candidat non trouvé' });
+        
+        const c = result.rows[0];
+        // On recrée l'objet analysis pour le frontend
+        const analysis = analyzeCandidate({
+            education: c.education,
+            experience: c.experience,
+            skills: c.skills,
+            languages: c.languages,
+            motivation_letter: c.motivation_letter
+        });
+
+        res.json({ ...c, analysis });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/candidates/:id/status', isAdmin, async (req, res) => {
+    const { status } = req.body;
+    try {
+        await pool.query('UPDATE candidates SET status = $1 WHERE id = $2', [status, req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/admin/candidates/:id/respond', isAdmin, async (req, res) => {
+    const { channel, subject, message } = req.body;
+    const candidateId = req.params.id;
+
+    try {
+        const result = await pool.query('SELECT email, first_name, last_name FROM candidates WHERE id = $1', [candidateId]);
+        const candidate = result.rows[0];
+        if (!candidate) return res.status(404).json({ error: 'Candidat non trouvé' });
+
+        // Logique d'envoi selon le canal
+        if (channel === 'email') {
+            const { sendEmail } = require('./emailService');
+            await sendEmail(candidate.email, subject || 'Information sur votre candidature', message, candidateId, 'admin_response');
+        } else {
+            // Simulation pour WhatsApp/SMS
+            await pool.query(`INSERT INTO email_logs (candidate_id, type, recipient, subject, body, status) 
+                              VALUES ($1, $2, $3, $4, $5, 'simulated')`, 
+                              [candidateId, channel, candidate.email, subject || 'Response', message]);
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/candidates/:id/document/:type', isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT cv_filename, diploma_filename, cert_filename FROM candidates WHERE id = $1', [req.params.id]);
+        const c = result.rows[0];
+        if (!c) return res.status(404).json({ error: 'Candidat non trouvé' });
+
+        const docMap = { cv: 'cv_filename', diploma: 'diploma_filename', cert: 'cert_filename' };
+        const fileName = c[docMap[req.params.type]];
+
+        if (!fileName) return res.status(404).json({ error: 'Document non disponible' });
+        res.redirect(fileName);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Admin Profile Update
+
 app.put('/api/admin/profile', (req, res) => {
     res.json({ success: true });
 });
