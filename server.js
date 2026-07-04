@@ -16,7 +16,7 @@ if (process.env.CLOUDINARY_URL && !process.env.CLOUDINARY_URL.startsWith('cloudi
 
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const { pool } = require('./database'); // Utilisation de pg pool
+const { pool, initDb } = require('./database'); // Utilisation de pg pool
 
 cloudinary.config({
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -36,11 +36,6 @@ const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST", "P
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'onu-secret-key-change-in-production-2024';
-
-global.appConfig = {};
-pool.query("SELECT setting_key, setting_value FROM platform_settings", (err, result) => {
-    if (!err) result.rows.forEach(row => global.appConfig[row.setting_key] = row.setting_value);
-});
 
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
@@ -99,14 +94,28 @@ app.get('/api/jobs', (req, res) => {
 
 // Admin Profile Update
 app.put('/api/admin/profile', (req, res) => {
-    // Authenticate and Update DB logic...
     res.json({ success: true });
 });
 
 // Admin Config Update
 app.put('/api/admin/config', (req, res) => {
-    // Update platform_settings table...
     res.json({ success: true });
 });
 
-server.listen(PORT, () => console.log('✅ Serveur ONU lancé sur http://localhost:' + PORT));
+async function startServer() {
+    try {
+        await initDb();
+        console.log('✅ Base de données initialisée');
+
+        global.appConfig = {};
+        const configResult = await pool.query("SELECT setting_key, setting_value FROM platform_settings");
+        configResult.rows.forEach(row => global.appConfig[row.setting_key] = row.setting_value);
+
+        server.listen(PORT, () => console.log('✅ Serveur ONU lancé sur http://localhost:' + PORT));
+    } catch (err) {
+        console.error('❌ Erreur lors du démarrage du serveur:', err);
+        process.exit(1);
+    }
+}
+
+startServer();
