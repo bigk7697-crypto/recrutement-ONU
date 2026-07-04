@@ -38,24 +38,24 @@ async function sendEmail(to, subject, htmlContent, candidateId, type) {
 
     try {
         const info = await transporter.sendMail(mailOptions);
-        console.log(`📧 Email envoyé à ${to}: ${info.messageId}`);
-
-        // Loguer l'email dans la base
+        console.log(`📧 [SUCCESS] Email envoyé à ${to}. ID: ${info.messageId}`);
+        
         await pool.query(`INSERT INTO email_logs (candidate_id, type, recipient, subject, body, status) 
                 VALUES ($1, $2, $3, $4, $5, 'sent')`, 
             [candidateId, type, to, subject, htmlContent]);
 
         return { success: true, simulated: false, messageId: info.messageId };
     } catch (error) {
-        console.log(`📧 Simulation email à ${to} (SMTP non configuré)`);
+        console.error(`❌ [EMAIL ERROR] Échec d'envoi à ${to}:`, error.message);
+        console.error(`Détails techniques:`, error);
 
-        // Loguer même en mode simulation
         await pool.query(`INSERT INTO email_logs (candidate_id, type, recipient, subject, body, status) 
-                VALUES ($1, $2, $3, $4, $5, 'simulated')`, 
+                VALUES ($1, $2, $3, $4, $5, 'failed')`, 
             [candidateId, type, to, subject, htmlContent]);
 
-        return { success: true, simulated: true, message: 'Email simulé (configure SMTP pour l\'envoi réel)' };
+        return { success: false, simulated: false, error: error.message };
     }
+
 }
 
 // Email d'accusé de réception
