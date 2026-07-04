@@ -243,6 +243,17 @@ app.put('/api/admin/config', (req, res) => {
     res.json({ success: true });
 });
 
+// Middleware de gestion d'erreurs global (DOIT être à la fin, après toutes les routes)
+app.use((err, req, res, next) => {
+    console.error('❌ GLOBAL ERROR:', err);
+    if (err instanceof multer.MulterError) {
+        return res.status(400).json({ error: `Erreur d'upload : ${err.message}` });
+    }
+    res.status(err.status || 500).json({ 
+        error: err.message || 'Une erreur interne est survenue sur le serveur.' 
+    });
+});
+
 async function startServer() {
     try {
         await initDb();
