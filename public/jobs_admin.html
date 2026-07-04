@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Offres - Nations Unies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .un-blue { background-color: #009edb; }
+        .text-un-blue { color: #009edb; }
+        .border-un-blue { border-color: #009edb; }
+        .hover-un-blue:hover { background-color: #0084ba; }
+    </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+    <aside class="w-64 bg-slate-900 text-white flex flex-col shrink-0 transition-all">
+        <div class="p-6 border-b border-slate-800">
+            <div class="flex items-center space-x-3">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg" alt="UN" class="h-8 w-auto rounded-sm">
+                <span class="font-bold text-sm tracking-wider">ADMIN UN</span>
+            </div>
+        </div>
+        <nav class="flex-grow p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-chart-pie"></i> <span>Tableau de Bord</span>
+            </a>
+            <a href="/admin/jobs" class="flex items-center space-x-3 p-3 rounded-lg bg-un-blue text-white font-semibold transition">
+                <i class="fa-solid fa-briefcase"></i> <span>Gestion des Offres</span>
+            </a>
+            <a href="/admin/settings" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-gear"></i> <span>Paramètres</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-800">
+            <button onclick="logout()" class="w-full flex items-center space-x-3 p-3 rounded-lg text-red-400 hover:bg-red-900/20 transition">
+                <i class="fa-solid fa-right-from-bracket"></i> <span>Déconnexion</span>
+            </button>
+        </div>
+    </aside>
+    <main class="flex-grow flex flex-col overflow-hidden">
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shrink-0">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800">Gestion des Offres d'Emploi</h2>
+                <p class="text-xs text-gray-500">Créez et gérez les opportunités de carrière internationales</p>
+            </div>
+            <button onclick="openJobModal()" class="px-4 py-2 un-blue text-white rounded-lg text-sm font-bold hover-un-blue transition flex items-center shadow-sm">
+                <i class="fa-solid fa-plus mr-2"></i> Publier une offre
+            </button>
+        </header>
+        <div class="flex-grow overflow-y-auto p-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Offres Totales</p>
+                        <p class="text-3xl font-black text-gray-800" id="stat-total">0</p>
+                    </div>
+                    <div class="h-12 w-12 rounded-lg bg-blue-50 text-un-blue flex items-center justify-center text-xl"><i class="fa-solid fa-folder-open"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Offres Actives</p>
+                        <p class="text-3xl font-black text-green-600" id="stat-active">0</p>
+                    </div>
+                    <div class="h-12 w-12 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-xl"><i class="fa-solid fa-circle-check"></i></div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Offres Fermées</p>
+                        <p class="text-3xl font-black text-gray-500" id="stat-closed">0</p>
+                    </div>
+                    <div class="h-12 w-12 rounded-lg bg-gray-50 text-gray-400 flex items-center justify-center text-xl"><i class="fa-solid fa-circle-xmark"></i></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6 flex flex-col md:flex-row gap-4 items-center">
+                <div class="relative flex-grow w-full">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <input type="text" id="searchJobs" placeholder="Rechercher un titre, lieu ou département..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue transition">
+                </div>
+                <select id="filterStatus" class="w-full md:w-48 px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-white transition">
+                    <option value="all">Tous les statuts</option>
+                    <option value="active">Actives</option>
+                    <option value="closed">Fermées</option>
+                    <option value="draft">Brouillons</option>
+                </select>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-gray-50 text-gray-500 font-semibold border-b border-gray-100">
+                        <tr>
+                            <th class="px-6 py-4">Titre du Poste</th>
+                            <th class="px-6 py-4">Département</th>
+                            <th class="px-6 py-4">Lieu</th>
+                            <th class="px-6 py-4">Statut</th>
+                            <th class="px-6 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobsTableBody" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+    <div id="jobModal" class="fixed inset-0 z-50 bg-black/60 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-gray-800" id="modalTitle">Ajouter une offre d'emploi</h3>
+                <button onclick="closeJobModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <form id="jobForm" class="p-8 overflow-y-auto space-y-5">
+                <input type="hidden" name="id" id="jobId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Titre du Poste *</label>
+                        <input type="text" name="title" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Département *</label>
+                        <input type="text" name="department" required placeholder="ex: UNDP, OMS..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Lieu *</label>
+                        <input type="text" name="location" required placeholder="ex: New York, Genève..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Type de contrat *</label>
+                        <select name="type" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                            <option value="CDI - Plein temps">CDI - Plein temps</option>
+                            <option value="CDD">CDD</option>
+                            <option value="Consultance">Consultance</option>
+                            <option value="Stage">Stage</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Statut *</label>
+                        <select name="status" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                            <option value="active">Active</option>
+                            <option value="closed">Fermée</option>
+                            <option value="draft">Brouillon</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Fourchette Salariale</label>
+                        <input type="text" name="salary_range" placeholder="ex: 60k - 80k USD/an" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Date limite</label>
+                        <input type="date" name="deadline" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description du Poste *</label>
+                        <textarea name="description" required rows="4" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Exigences & Qualifications *</label>
+                        <textarea name="requirements" required rows="4" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeJobModal()" class="px-4 py-2 text-gray-500 hover:text-gray-700 text-sm font-semibold transition">Annuler</button>
+                    <button type="submit" class="px-6 py-2 un-blue text-white rounded-lg text-sm font-bold hover-un-blue transition shadow">Enregistrer l'offre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        let allJobs = [];
+        document.addEventListener('DOMContentLoaded', () => {
+            loadJobs();
+            document.getElementById('searchJobs').addEventListener('input', renderJobs);
+            document.getElementById('filterStatus').addEventListener('change', renderJobs);
+        });
+        async function loadJobs() {
+            try {
+                const res = await fetch('/api/admin/jobs');
+                if (!res.ok) throw new Error('Erreur de chargement');
+                allJobs = await res.json();
+                updateStats();
+                renderJobs();
+            } catch (e) { console.error(e); }
+        }
+        function updateStats() {
+            document.getElementById('stat-total').innerText = allJobs.length;
+            document.getElementById('stat-active').innerText = allJobs.filter(j => j.status === 'active').length;
+            document.getElementById('stat-closed').innerText = allJobs.filter(j => j.status === 'closed').length;
+        }
+        function renderJobs() {
+            const search = document.getElementById('searchJobs').value.toLowerCase();
+            const status = document.getElementById('filterStatus').value;
+            const filtered = allJobs.filter(j => {
+                const matchesSearch = j.title.toLowerCase().includes(search) || j.department.toLowerCase().includes(search) || j.location.toLowerCase().includes(search);
+                const matchesStatus = status === 'all' || j.status === status;
+                return matchesSearch && matchesStatus;
+            });
+            const body = document.getElementById('jobsTableBody');
+            if (filtered.length === 0) {
+                body.innerHTML = '<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">Aucune offre trouvée.</td></tr>';
+                return;
+            }
+            body.innerHTML = filtered.map(j => `
+                <tr class="hover:bg-gray-50 transition">
+                    <td class="px-6 py-4 font-bold text-gray-800">${j.title}</td>
+                    <td class="px-6 py-4 text-gray-600">${j.department}</td>
+                    <td class="px-6 py-4 text-gray-600">${j.location}</td>
+                    <td class="px-6 py-4">
+                        <span class="px-2 py-1 rounded-full text-[10px] font-bold uppercase ${j.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${j.status}</span>
+                    </td>
+                    <td class="px-6 py-4 text-right space-x-2">
+                        <button onclick="duplicateJob(${j.id})" class="text-gray-400 hover:text-un-blue transition" title="Dupliquer"><i class="fa-solid fa-copy"></i></button>
+                        <button onclick="editJob(${j.id})" class="text-un-blue hover:text-blue-800 transition" title="Modifier"><i class="fa-solid fa-pen-to-square"></i></button>
+                        <button onclick="deleteJob(${j.id})" class="text-red-400 hover:text-red-600 transition" title="Supprimer"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        function openJobModal() {
+            document.getElementById('jobForm').reset();
+            document.getElementById('jobId').value = '';
+            document.getElementById('modalTitle').innerText = 'Ajouter une offre d'emploi';
+            document.getElementById('jobModal').classList.remove('hidden');
+        }
+        function closeJobModal() { document.getElementById('jobModal').classList.add('hidden'); }
+        async function editJob(id) {
+            const job = allJobs.find(j => j.id === id);
+            if (!job) return;
+            document.getElementById('jobId').value = job.id;
+            document.getElementById('modalTitle').innerText = 'Modifier l'offre d'emploi';
+            const form = document.getElementById('jobForm');
+            form.title.value = job.title;
+            form.department.value = job.department;
+            form.location.value = job.location;
+            form.type.value = job.type;
+            form.status.value = job.status;
+            form.salary_range.value = job.salary_range || '';
+            form.deadline.value = job.deadline || '';
+            form.description.value = job.description;
+            form.requirements.value = job.requirements;
+            document.getElementById('jobModal').classList.remove('hidden');
+        }
+        async function duplicateJob(id) {
+            try {
+                const res = await fetch(`/api/admin/jobs/${id}/duplicate`, { method: 'POST' });
+                if (res.ok) await loadJobs();
+            } catch (e) { alert('Erreur lors de la duplication'); }
+        }
+        async function deleteJob(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette offre ?')) return;
+            try {
+                const res = await fetch(`/api/admin/jobs/${id}`, { method: 'DELETE' });
+                if (res.ok) loadJobs();
+            } catch (e) { alert('Erreur lors de la suppression'); }
+        }
+        document.getElementById('jobForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            const id = data.id;
+            delete data.id;
+            try {
+                const url = id ? `/api/admin/jobs/${id}` : '/api/admin/jobs';
+                const method = id ? 'PUT' : 'POST';
+                const res = await fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+                if (res.ok) { closeJobModal(); loadJobs(); }
+            } catch (e) { alert('Erreur lors de l'enregistrement'); }
+        });
+        function logout() { fetch('/api/admin/logout').then(() => window.location.href = '/recru'); }
+    </script>
+</body>
+</html>

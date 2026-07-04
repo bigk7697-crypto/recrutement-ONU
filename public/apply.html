@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg">
+    <title>Déposer ma candidature - Organisation des Nations Unies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .un-blue { background-color: #009edb; }
+        .text-un-blue { color: #009edb; }
+        .border-un-blue { border-color: #009edb; }
+        .hover-un-blue:hover { background-color: #0084ba; }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white shadow-sm border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg" alt="Drapeau de l'ONU" class="h-12 w-auto shadow-sm rounded-sm">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-900 flex items-center">
+                        <span>NATIONS UNIES</span>
+                    </h1>
+                    <p class="text-xs text-gray-500 uppercase font-semibold tracking-wider">Portail de recrutement officiel</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium text-gray-600">
+                <a href="/" class="hover:text-un-blue">Accueil</a>
+                <a href="/jobs" class="hover:text-un-blue">Offres d'emploi</a>
+                <a href="/apply" class="text-un-blue font-bold">Candidature Spontanée</a>
+                <a href="/status" class="hover:text-un-blue">Suivre ma candidature</a>
+            </nav>
+            <div class="flex items-center space-x-3">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Form Container -->
+    <main class="flex-grow max-w-4xl mx-auto px-4 sm:px-6 py-10 w-full">
+        <!-- Title & Subtitle -->
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-900">Formulaire Officiel de Candidature</h2>
+            <p class="mt-2 text-sm text-gray-600" id="formSubtitle">Déposez votre candidature pour intégrer les équipes de l'Organisation des Nations Unies.</p>
+        </div>
+
+        <!-- Form Status Alerts -->
+        <div id="alertBox" class="hidden mb-6 p-4 rounded-lg flex items-start gap-3 border"></div>
+
+        <!-- Success Screen -->
+        <div id="successScreen" class="hidden bg-white rounded-xl shadow-lg border border-green-100 p-8 text-center max-w-xl mx-auto my-12">
+            <div class="h-16 w-16 bg-green-50 text-green-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-6">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">Candidature Enregistrée !</h3>
+            <p class="text-gray-600 text-sm mb-6">Votre dossier a été soumis avec succès à l'Organisation des Nations Unies. Un accusé de réception vous a été envoyé par e-mail.</p>
+            
+            <div class="bg-blue-50 border-l-4 border-un-blue p-4 rounded-r-lg text-left mb-8">
+                <p class="text-xs text-gray-500 uppercase font-bold tracking-wider mb-1">Votre numéro de référence de suivi :</p>
+                <p class="text-xl font-mono font-bold text-un-blue tracking-widest" id="refNumberPlaceholder">UN-2026-XXXXXXXX</p>
+                <p class="text-xs text-gray-400 mt-2"><em>Conservez précieusement ce numéro. Vous en aurez besoin pour suivre l'évaluation de votre dossier sur la page de suivi.</em></p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/status" class="px-5 py-2.5 bg-un-blue hover-un-blue text-white rounded-lg font-bold text-sm shadow transition">
+                    <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Suivre ma candidature
+                </a>
+                <a href="/" class="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-bold text-sm transition">
+                    Retour à l'accueil
+                </a>
+            </div>
+        </div>
+
+        <!-- Form Elements -->
+        <form id="applyForm" class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden" enctype="multipart/form-data">
+            <!-- Hidden offer_id -->
+            <input type="hidden" name="offer_id" id="offerIdInput">
+
+            <!-- Progress Indicator -->
+            <div class="h-1.5 bg-gray-100 w-full">
+                <div class="h-1.5 un-blue w-1/4 transition-all duration-300" id="progressBar"></div>
+            </div>
+
+            <!-- Tab Headers -->
+            <div class="flex border-b border-gray-100 bg-gray-50 text-xs sm:text-sm font-semibold text-gray-500 overflow-x-auto">
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-un-blue text-un-blue whitespace-nowrap" id="tab1" onclick="showStep(1)"><i class="fa-solid fa-user mr-1.5"></i>1. Identité</button>
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab2" onclick="showStep(2)"><i class="fa-solid fa-graduation-cap mr-1.5"></i>2. Éducation</button>
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab3" onclick="showStep(3)"><i class="fa-solid fa-briefcase mr-1.5"></i>3. Expérience</button>
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab4" onclick="showStep(4)"><i class="fa-solid fa-file-arrow-up mr-1.5"></i>4. Documents</button>
+            </div>
+
+            <!-- STEP 1 : Identité -->
+            <div class="p-6 sm:p-8 space-y-6" id="stepContent1">
+                <h3 class="text-lg font-bold text-gray-900 border-b pb-2"><i class="fa-solid fa-address-card mr-2 text-un-blue"></i>Informations Personnelles</h3>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Prénom <span class="text-red-500">*</span></label>
+                        <input type="text" name="first_name" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Nom de famille <span class="text-red-500">*</span></label>
+                        <input type="text" name="last_name" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Adresse E-mail <span class="text-red-500">*</span></label>
+                        <input type="email" name="email" required class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Numéro de téléphone <span class="text-red-500">*</span></label>
+                        <input type="tel" name="phone" required placeholder="Ex: +33 6 12 34 56 78" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Numéro WhatsApp <span class="text-red-500">*</span></label>
+                        <input type="tel" name="whatsapp" required placeholder="Ex: +33 6 12 34 56 78" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Métier / Profession principale <span class="text-red-500">*</span></label>
+                        <input type="text" name="profession" required placeholder="Ex: Développeur Full Stack, Coordinateur, Épidémiologiste..." class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Pays <span class="text-red-500">*</span></label>
+                        <input type="text" name="country" required placeholder="Ex: France, Canada, Sénégal..." class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Ville <span class="text-red-500">*</span></label>
+                        <input type="text" name="city" required placeholder="Ex: Paris, Montréal, Dakar..." class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2 : Éducation / Diplômes -->
+            <div class="p-6 sm:p-8 space-y-6 hidden" id="stepContent2">
+                <h3 class="text-lg font-bold text-gray-900 border-b pb-2"><i class="fa-solid fa-user-graduate mr-2 text-un-blue"></i>Formation & Compétences</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Niveau d'études maximum / Diplômes obtenus <span class="text-red-500">*</span></label>
+                        <input type="text" name="education" required placeholder="Ex: Master en Développement Durable, Doctorat en Droit International..." class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Certifications professionnelles (Optionnel)</label>
+                        <textarea name="certifications" rows="2" placeholder="Ex: PMP (Project Management Professional), ITIL, AWS Architect..." class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Compétences clés <span class="text-red-500">*</span></label>
+                            <input type="text" name="skills" required placeholder="Séparez par des virgules (ex: Gestion de projet, SQL, Analyse de données)" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Langues parlées <span class="text-red-500">*</span></label>
+                            <input type="text" name="languages" required placeholder="Séparez par des virgules (ex: Français, Anglais (Courant), Espagnol)" class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 3 : Expérience -->
+            <div class="p-6 sm:p-8 space-y-6 hidden" id="stepContent3">
+                <h3 class="text-lg font-bold text-gray-900 border-b pb-2"><i class="fa-solid fa-briefcase mr-2 text-un-blue"></i>Expérience Professionnelle</h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Années d'expérience professionnelle <span class="text-red-500">*</span></label>
+                        <input type="number" name="experience_years" required min="0" max="50" placeholder="Ex: 5" class="w-64 px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Détail de vos expériences significatives <span class="text-red-500">*</span></label>
+                        <textarea name="experience" required rows="6" placeholder="Veuillez résumer vos postes passés, missions clés et entreprises/organisations où vous avez travaillé..." class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Lettre de motivation (Copier-coller ou texte personnalisé) <span class="text-red-500">*</span></label>
+                        <textarea name="motivation_letter" required rows="6" placeholder="Expliquez pourquoi vous souhaitez rejoindre l'Organisation des Nations Unies et votre contribution potentielle..." class="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 4 : Documents -->
+            <div class="p-6 sm:p-8 space-y-6 hidden" id="stepContent4">
+                <h3 class="text-lg font-bold text-gray-900 border-b pb-2"><i class="fa-solid fa-upload mr-2 text-un-blue"></i>Pièces Jointes Obligatoires & Justificatifs</h3>
+                
+                <p class="text-xs text-gray-500 mb-4">Formats acceptés : PDF, DOC, DOCX, JPG, PNG. Taille maximale de chaque fichier : 10 Mo.</p>
+
+                <div class="space-y-6">
+                    <!-- CV File -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Curriculum Vitae (CV) <span class="text-red-500">*</span></label>
+                        <input type="file" name="cv" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-un-blue hover:file:bg-blue-100 transition">
+                    </div>
+
+                    <!-- Diploma File -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Copie du dernier diplôme universitaire obtenu <span class="text-red-500">*</span></label>
+                        <input type="file" name="diploma" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-un-blue hover:file:bg-blue-100 transition">
+                    </div>
+
+                    <!-- Certifications File -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Copies des certifications mentionnées (Optionnel)</label>
+                        <input type="file" name="cert" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-un-blue hover:file:bg-blue-100 transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-between">
+                <button type="button" id="prevBtn" onclick="navigateStep(-1)" class="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-semibold transition hidden">
+                    <i class="fa-solid fa-chevron-left mr-1.5"></i> Précédent
+                </button>
+                <button type="button" id="nextBtn" onclick="navigateStep(1)" class="px-6 py-2.5 un-blue hover-un-blue text-white rounded-lg text-sm font-semibold transition ml-auto flex items-center">
+                    Suivant <i class="fa-solid fa-chevron-right ml-1.5"></i>
+                </button>
+                <button type="submit" id="submitBtn" class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold transition ml-auto flex items-center hidden">
+                    <span id="submitSpinner" class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2 hidden"></span>
+                    <i class="fa-solid fa-paper-plane mr-1.5"></i> Soumettre ma candidature
+                </button>
+            </div>
+        </form>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-gray-400 py-12 mt-auto border-t-4 border-un-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div>
+                <div class="flex items-center justify-center sm:justify-start space-x-2 text-white font-semibold mb-2">
+                    <i class="fa-solid fa-globe text-un-blue"></i>
+                    <span>Organisation des Nations Unies</span>
+                </div>
+                <p class="text-xs text-gray-500">Recrutement et emploi - Portail Officiel</p>
+            </div>
+            <div class="text-xs text-gray-500 text-center sm:text-right">
+                <p>© 2026 Nations Unies. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let currentStep = 1;
+        const totalSteps = 4;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Récupérer le jobId dans l'URL si existant
+            const urlParams = new URLSearchParams(window.location.search);
+            const jobId = urlParams.get('jobId');
+            if (jobId) {
+                document.getElementById('offerIdInput').value = jobId;
+                fetchJobDetails(jobId);
+            }
+
+            document.getElementById('applyForm').addEventListener('submit', handleFormSubmit);
+        });
+
+        async function fetchJobDetails(id) {
+            try {
+                const res = await fetch(`/api/jobs/${id}`);
+                if (res.ok) {
+                    const job = await res.json();
+                    document.getElementById('formSubtitle').innerHTML = `Candidature pour le poste : <strong>${job.title} (${job.department})</strong>`;
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function showStep(step) {
+            currentStep = step;
+            
+            // Masquer tous les contenus
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById(`stepContent${i}`).classList.add('hidden');
+                document.getElementById(`tab${i}`).className = "flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap";
+            }
+
+            // Afficher le contenu actif
+            document.getElementById(`stepContent${step}`).classList.remove('hidden');
+            document.getElementById(`tab${step}`).className = "flex-1 py-4 px-3 text-center border-b-2 border-un-blue text-un-blue whitespace-nowrap";
+
+            // Gérer la barre de progression
+            const percent = (step / totalSteps) * 100;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+
+            // Gérer les boutons
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const submitBtn = document.getElementById('submitBtn');
+
+            if (step === 1) {
+                prevBtn.classList.add('hidden');
+            } else {
+                prevBtn.classList.remove('hidden');
+            }
+
+            if (step === totalSteps) {
+                nextBtn.classList.add('hidden');
+                submitBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                submitBtn.classList.add('hidden');
+            }
+        }
+
+        function navigateStep(direction) {
+            // Validation simple avant d'avancer
+            if (direction === 1) {
+                const currentContainer = document.getElementById(`stepContent${currentStep}`);
+                const inputs = currentContainer.querySelectorAll('input[required], textarea[required]');
+                let valid = true;
+                inputs.forEach(input => {
+                    if (!input.value || !input.checkValidity()) {
+                        input.classList.add('border-red-500');
+                        valid = false;
+                    } else {
+                        input.classList.remove('border-red-500');
+                    }
+                });
+
+                if (!valid) {
+                    showAlert('Veuillez remplir correctement tous les champs obligatoires.', 'error');
+                    return;
+                }
+                clearAlert();
+            }
+
+            const nextStep = currentStep + direction;
+            if (nextStep >= 1 && nextStep <= totalSteps) {
+                showStep(nextStep);
+            }
+        }
+
+        function showAlert(msg, type = 'info') {
+            const alertBox = document.getElementById('alertBox');
+            alertBox.classList.remove('hidden', 'bg-red-50', 'border-red-100', 'text-red-700', 'bg-blue-50', 'border-blue-100', 'text-blue-700');
+            
+            if (type === 'error') {
+                alertBox.classList.add('bg-red-50', 'border-red-100', 'text-red-700');
+                alertBox.innerHTML = `<i class="fa-solid fa-circle-exclamation text-lg mt-0.5"></i> <div><span class="font-bold">Erreur :</span> ${msg}</div>`;
+            } else {
+                alertBox.classList.add('bg-blue-50', 'border-blue-100', 'text-blue-700');
+                alertBox.innerHTML = `<i class="fa-solid fa-circle-info text-lg mt-0.5"></i> <div>${msg}</div>`;
+            }
+            alertBox.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearAlert() {
+            document.getElementById('alertBox').classList.add('hidden');
+        }
+
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('submitSpinner');
+            
+            submitBtn.disabled = true;
+            spinner.classList.remove('hidden');
+
+            const formData = new FormData(this);
+
+            try {
+                const res = await fetch('/api/apply', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Une erreur est survenue lors du dépôt de votre dossier.');
+                }
+
+                // Masquer le formulaire, afficher le succès
+                document.getElementById('applyForm').classList.add('hidden');
+                document.getElementById('successScreen').classList.remove('hidden');
+                document.getElementById('refNumberPlaceholder').innerText = data.reference_number;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            } catch (err) {
+                showAlert(err.message, 'error');
+                submitBtn.disabled = false;
+                spinner.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>

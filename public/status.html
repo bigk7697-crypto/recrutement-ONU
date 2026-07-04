@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg">
+    <title>Suivi de Candidature - Organisation des Nations Unies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .un-blue { background-color: #009edb; }
+        .text-un-blue { color: #009edb; }
+        .border-un-blue { border-color: #009edb; }
+        .hover-un-blue:hover { background-color: #0084ba; }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col min-h-screen">
+
+    <!-- Header / Navbar -->
+    <header class="bg-white shadow-sm border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg" alt="Drapeau de l'ONU" class="h-12 w-auto shadow-sm rounded-sm">
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-gray-900 flex items-center">
+                        <span>NATIONS UNIES</span>
+                    </h1>
+                    <p class="text-xs text-gray-500 uppercase font-semibold tracking-wider">Portail de recrutement officiel</p>
+                </div>
+            </div>
+            <nav class="hidden md:flex space-x-8 text-sm font-medium text-gray-600">
+                <a href="/" class="hover:text-un-blue">Accueil</a>
+                <a href="/jobs" class="hover:text-un-blue">Offres d'emploi</a>
+                <a href="/apply" class="hover:text-un-blue font-semibold">Candidature Spontanée</a>
+                <a href="/status" class="text-un-blue font-bold">Suivre ma candidature</a>
+            </nav>
+            <div class="flex items-center space-x-3">
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-4xl mx-auto px-4 py-12 w-full">
+        <div class="text-center mb-10">
+            <h2 class="text-3xl font-extrabold text-gray-900">Suivi en temps réel de votre dossier</h2>
+            <p class="mt-2 text-sm text-gray-500">Saisissez votre numéro de référence unique (ex: UN-2026-XXXXXXXX) pour consulter l'avancement de votre dossier.</p>
+        </div>
+
+        <!-- Search Bar Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8 max-w-2xl mx-auto">
+            <form id="statusForm" class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-grow relative">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
+                        <i class="fa-solid fa-hashtag"></i>
+                    </div>
+                    <input type="text" id="refInput" required placeholder="Numéro de référence (UN-2026-...)" class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg text-sm font-mono tracking-wider focus:outline-none focus:border-un-blue uppercase transition">
+                </div>
+                <button type="submit" class="px-6 py-3 un-blue hover-un-blue text-white rounded-lg font-bold text-sm shadow transition flex items-center justify-center">
+                    <span id="searchSpinner" class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2 hidden"></span>
+                    <i class="fa-solid fa-magnifying-glass mr-1.5"></i> Rechercher
+                </button>
+            </form>
+            <div id="alertBox" class="hidden mt-4 p-4 rounded-lg bg-red-50 border border-red-100 text-red-700 text-xs flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation text-base"></i>
+                <span id="alertMsg"></span>
+            </div>
+        </div>
+
+        <!-- Result Card (Hidden initially) -->
+        <div id="resultCard" class="hidden bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden max-w-3xl mx-auto">
+            <!-- Header -->
+            <div class="bg-slate-900 text-white p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <span class="text-xs uppercase tracking-widest text-gray-400 font-bold">Dossier de candidature</span>
+                    <h3 class="text-2xl font-bold mt-1" id="candidateName">Jean Dupont</h3>
+                    <p class="text-sm text-un-blue mt-1 font-semibold" id="jobTitle">Spécialiste UNDP</p>
+                </div>
+                <div class="bg-slate-800 border border-slate-700 px-4 py-2.5 rounded-lg text-left sm:text-right">
+                    <p class="text-[10px] text-gray-400 uppercase font-semibold">Référence de suivi</p>
+                    <p class="font-mono text-base font-bold text-un-blue tracking-wider" id="refNumber">UN-2026-ABCD1234</p>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div class="p-6 sm:p-8">
+                <h4 class="font-bold text-gray-900 mb-6 border-b pb-2">État d'avancement du dossier</h4>
+
+                <!-- Stepper Timeline -->
+                <div class="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-gray-200">
+                    <!-- Step 1 -->
+                    <div class="relative" id="step1">
+                        <div class="absolute left-[-29px] top-0.5 h-6 w-6 rounded-full bg-gray-200 border-4 border-white flex items-center justify-center text-[10px] text-gray-400 font-bold step-dot" id="dot1">1</div>
+                        <div>
+                            <h5 class="font-semibold text-gray-900" id="title1">Candidature reçue</h5>
+                            <p class="text-xs text-gray-500 mt-1">Votre candidature a été correctement enregistrée dans notre système.</p>
+                            <p class="text-xs text-gray-400 mt-1" id="date1">---</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 2 -->
+                    <div class="relative" id="step2">
+                        <div class="absolute left-[-29px] top-0.5 h-6 w-6 rounded-full bg-gray-200 border-4 border-white flex items-center justify-center text-[10px] text-gray-400 font-bold step-dot" id="dot2">2</div>
+                        <div>
+                            <h5 class="font-semibold text-gray-400" id="title2">En cours d'examen</h5>
+                            <p class="text-xs text-gray-400 mt-1">L'équipe de recrutement analyse la conformité de vos diplômes et de vos expériences.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="relative" id="step3">
+                        <div class="absolute left-[-29px] top-0.5 h-6 w-6 rounded-full bg-gray-200 border-4 border-white flex items-center justify-center text-[10px] text-gray-400 font-bold step-dot" id="dot3">3</div>
+                        <div>
+                            <h5 class="font-semibold text-gray-400" id="title3">Entretien de sélection</h5>
+                            <p class="text-xs text-gray-400 mt-1">Un entretien technique et de compétences sera planifié par l'administrateur si votre profil est retenu.</p>
+                        </div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="relative" id="step4">
+                        <div class="absolute left-[-29px] top-0.5 h-6 w-6 rounded-full bg-gray-200 border-4 border-white flex items-center justify-center text-[10px] text-gray-400 font-bold step-dot" id="dot4">4</div>
+                        <div>
+                            <h5 class="font-semibold text-gray-400" id="title4">Décision finale</h5>
+                            <p class="text-xs text-gray-400 mt-1">L'Organisation valide la décision finale et vous contacte via le canal de communication sélectionné.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call to Action Box -->
+                <div class="bg-gray-50 border border-gray-200 rounded-xl p-6 mt-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h5 class="font-bold text-gray-900 text-sm">Des questions concernant votre dossier ?</h5>
+                        <p class="text-xs text-gray-500 mt-0.5">Notez que toutes les notifications vous seront envoyées directement par Email, SMS ou WhatsApp.</p>
+                    </div>
+                    <a href="/jobs" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-700 bg-white hover:bg-gray-50 transition">
+                        Parcourir d'autres offres
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-gray-400 py-12 mt-auto border-t-4 border-un-blue">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-6">
+            <div>
+                <div class="flex items-center justify-center sm:justify-start space-x-2 text-white font-semibold mb-2">
+                    <i class="fa-solid fa-globe text-un-blue"></i>
+                    <span>Organisation des Nations Unies</span>
+                </div>
+                <p class="text-xs text-gray-500">Recrutement et emploi - Portail Officiel</p>
+            </div>
+            <div class="text-xs text-gray-500 text-center sm:text-right">
+                <p>© 2026 Nations Unies. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const ref = urlParams.get('ref');
+            if (ref) {
+                document.getElementById('refInput').value = ref;
+                checkStatus(ref);
+            }
+
+            document.getElementById('statusForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const refVal = document.getElementById('refInput').value.trim();
+                checkStatus(refVal);
+            });
+        });
+
+        async function checkStatus(ref) {
+            const spinner = document.getElementById('searchSpinner');
+            const alertBox = document.getElementById('alertBox');
+            const resultCard = document.getElementById('resultCard');
+
+            spinner.classList.remove('hidden');
+            alertBox.classList.add('hidden');
+
+            try {
+                const res = await fetch(`/api/status/${ref}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    throw new Error(data.error || 'Numéro de référence introuvable.');
+                }
+
+                // Afficher les données générales
+                document.getElementById('candidateName').innerText = `${data.first_name} ${data.last_name}`;
+                document.getElementById('jobTitle').innerText = data.job_title || 'Candidature Spontanée';
+                document.getElementById('refNumber').innerText = data.reference_number;
+                document.getElementById('date1').innerText = `Enregistré le : ${new Date(data.created_at).toLocaleString()}`;
+
+                // Réinitialiser les styles du stepper
+                const dots = ['dot1', 'dot2', 'dot3', 'dot4'];
+                const titles = ['title1', 'title2', 'title3', 'title4'];
+
+                dots.forEach(d => {
+                    const el = document.getElementById(d);
+                    el.className = "absolute left-[-29px] top-0.5 h-6 w-6 rounded-full bg-gray-200 border-4 border-white flex items-center justify-center text-[10px] text-gray-400 font-bold step-dot";
+                });
+                titles.forEach(t => {
+                    document.getElementById(t).className = "font-semibold text-gray-400";
+                });
+
+                // Activer les étapes selon le statut
+                const status = data.status;
+
+                // Statut: "En attente d'analyse", "Analyse en cours", "Entretien programmé", "Profil retenu", "Profil non retenu"
+                
+                // Étape 1 : Candidature reçue (Toujours active)
+                activateStep('dot1', 'title1', 'bg-blue-500 text-white border-blue-100');
+
+                if (status === "En attente d'analyse") {
+                    // Rien de plus
+                } else if (status === "Analyse en cours") {
+                    activateStep('dot2', 'title2', 'bg-blue-500 text-white border-blue-100');
+                    document.getElementById('title2').innerText = "Examen en cours";
+                } else if (status === "Entretien programmé") {
+                    activateStep('dot2', 'title2', 'bg-green-500 text-white border-green-100');
+                    activateStep('dot3', 'title3', 'bg-blue-500 text-white border-blue-100');
+                    document.getElementById('title2').innerText = "Examen complété";
+                    document.getElementById('title3').innerText = "Entretien planifié";
+                } else if (status === "Profil retenu") {
+                    activateStep('dot2', 'title2', 'bg-green-500 text-white border-green-100');
+                    activateStep('dot3', 'title3', 'bg-green-500 text-white border-green-100');
+                    activateStep('dot4', 'title4', 'bg-green-500 text-white border-green-100');
+                    document.getElementById('title2').innerText = "Examen complété";
+                    document.getElementById('title3').innerText = "Entretien complété";
+                    document.getElementById('title4').innerText = "Candidature retenue 🎉";
+                } else if (status === "Profil non retenu") {
+                    activateStep('dot2', 'title2', 'bg-green-500 text-white border-green-100');
+                    activateStep('dot3', 'title3', 'bg-green-500 text-white border-green-100');
+                    activateStep('dot4', 'title4', 'bg-red-500 text-white border-red-100');
+                    document.getElementById('title2').innerText = "Examen complété";
+                    document.getElementById('title3').innerText = "Entretien complété";
+                    document.getElementById('title4').innerText = "Candidature non retenue";
+                }
+
+                resultCard.classList.remove('hidden');
+
+            } catch (err) {
+                resultCard.classList.add('hidden');
+                document.getElementById('alertMsg').innerText = err.message;
+                alertBox.classList.remove('hidden');
+            } finally {
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function activateStep(dotId, titleId, classes) {
+            const dot = document.getElementById(dotId);
+            dot.className = `absolute left-[-29px] top-0.5 h-6 w-6 rounded-full border-4 flex items-center justify-center text-[10px] font-bold step-dot ${classes}`;
+            document.getElementById(titleId).className = "font-semibold text-gray-900";
+        }
+    </script>
+</body>
+</html>

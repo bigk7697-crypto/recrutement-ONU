@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg">
+    <title>Tableau de Bord Admin - Nations Unies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .un-blue { background-color: #009edb; }
+        .text-un-blue { color: #009edb; }
+        .border-un-blue { border-color: #009edb; }
+        .hover-un-blue:hover { background-color: #0084ba; }
+        .status-pending { background-color: #fef3c7; color: #92400e; }
+        .status-review { background-color: #e0f2fe; color: #0369a1; }
+        .status-accepted { background-color: #dcfce7; color: #166534; }
+        .status-rejected { background-color: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-slate-900 text-white flex flex-col shrink-0 transition-all">
+        <div class="p-6 border-b border-slate-800">
+            <div class="flex items-center space-x-3">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg" alt="UN" class="h-8 w-auto rounded-sm">
+                <span class="font-bold text-sm tracking-wider">ADMIN UN</span>
+            </div>
+        </div>
+        <nav class="flex-grow p-4 space-y-2">
+            <a href="/dashboard" class="flex items-center space-x-3 p-3 rounded-lg bg-un-blue text-white font-semibold transition">
+                <i class="fa-solid fa-chart-pie"></i> <span>Tableau de Bord</span>
+            </a>
+            <a href="/admin/jobs" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-briefcase"></i> <span>Gestion des Offres</span>
+            </a>
+            <a href="/admin/settings" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition">
+                <i class="fa-solid fa-gear"></i> <span>Paramètres</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-slate-800">
+            <button onclick="logout()" class="w-full flex items-center space-x-3 p-3 rounded-lg text-red-400 hover:bg-red-900/20 transition">
+                <i class="fa-solid fa-right-from-bracket"></i> <span>Déconnexion</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col overflow-hidden">
+        <!-- Top Navbar -->
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shrink-0">
+            <h2 class="text-xl font-bold text-gray-800">Gestion des Candidatures</h2>
+            <div class="flex items-center space-x-4">
+                <button onclick="openGuide()" class="text-xs font-semibold text-gray-500 hover:text-un-blue transition flex items-center">
+                    <i class="fa-solid fa-circle-question mr-1.5"></i> Guide d'utilisation
+                </button>
+                <div class="relative">
+                    <button id="notifBtn" class="p-2 text-gray-500 hover:text-un-blue transition relative">
+                        <i class="fa-solid fa-bell text-xl"></i>
+                        <span id="notifBadge" class="hidden absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
+                    </button>
+                    <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white shadow-xl border border-gray-200 rounded-xl z-50 overflow-hidden">
+                        <div class="p-3 border-b border-gray-100 font-bold text-xs uppercase text-gray-500">Notifications</div>
+                        <div id="notifList" class="max-h-64 overflow-y-auto">
+                            <p class="p-4 text-sm text-gray-400 text-center">Aucune nouvelle notification</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-3 pl-4 border-l border-gray-200">
+                    <span id="adminName" class="text-sm font-medium text-gray-700">Chargement...</span>
+                    <div class="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-xs">AD</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <div class="flex-grow overflow-y-auto p-8">
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" id="statsGrid">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center space-x-4">
+                    <div class="h-12 w-12 rounded-lg bg-blue-50 text-un-blue flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Total Candidats</p>
+                        <p class="text-2xl font-black text-gray-800" id="stat-total">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center space-x-4">
+                    <div class="h-12 w-12 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xl"><i class="fa-solid fa-clock"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">En attente</p>
+                        <p class="text-2xl font-black text-gray-800" id="stat-pending">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center space-x-4">
+                    <div class="h-12 w-12 rounded-lg bg-green-50 text-green-600 flex items-center justify-center text-xl"><i class="fa-solid fa-check-circle"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Retenus</p>
+                        <p class="text-2xl font-black text-gray-800" id="stat-accepted">0</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 flex items-center space-x-4">
+                    <div class="h-12 w-12 rounded-lg bg-red-50 text-red-600 flex items-center justify-center text-xl"><i class="fa-solid fa-times-circle"></i></div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Refusés</p>
+                        <p class="text-2xl font-black text-gray-800" id="stat-rejected">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Candidates Table Section -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <h3 class="text-lg font-bold text-gray-800">Liste des candidatures</h3>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </div>
+                            <input type="text" id="searchCandidates" placeholder="Rechercher un candidat..." class="pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue transition w-full sm:w-64">
+                        </div>
+                        <select id="filterStatus" class="px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-white transition">
+                            <option value="all">Tous les statuts</option>
+                            <option value="En attente d'analyse">En attente</option>
+                            <option value="Analyse en cours">Analyse en cours</option>
+                            <option value="Entretien programmé">Entretien</option>
+                            <option value="Profil retenu">Retenu</option>
+                            <option value="Profil non retenu">Refusé</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 text-gray-500 font-semibold border-b border-gray-100">
+                            <tr>
+                                <th class="px-6 py-4">Candidat</th>
+                                <th class="px-6 py-4">Poste</th>
+                                <th class="px-6 py-4">Score</th>
+                                <th class="px-6 py-4">Statut</th>
+                                <th class="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="candidatesTableBody" class="divide-y divide-gray-100">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- CANDIDATE DETAIL MODAL -->
+    <div id="detailModal" class="fixed inset-0 z-50 bg-black/60 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
+            <!-- Modal Header -->
+            <div class="p-6 border-b border-gray-100 bg-slate-900 text-white flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <div class="h-12 w-12 rounded-full bg-un-blue flex items-center justify-center text-xl font-bold text-white" id="modalInitials">JD</div>
+                    <div>
+                        <h3 class="text-xl font-bold" id="modalCandidateName">Jean Dupont</h3>
+                        <p class="text-xs text-gray-400" id="modalCandidateRef">Réf: UN-2026-XXXXX</p>
+                    </div>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition text-2xl">&times;</button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-grow overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left Column: Basic Info & Documents -->
+                <div class="lg:col-span-1 space-y-6">
+                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Informations de Contact</h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-500">Email:</span> <span class="font-medium text-gray-900" id="detEmail"></span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Téléphone:</span> <span class="font-medium text-gray-900" id="detPhone"></span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">WhatsApp:</span> <span class="font-medium text-gray-900" id="detWhatsapp"></span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Pays/Ville:</span> <span class="font-medium text-gray-900" id="detLocation"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 space-y-4">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Documents</h4>
+                        <div class="space-y-3" id="docLinks">
+                            <!-- Dynamic Links -->
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 text-center">
+                        <p class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Analyse Automatique</p>
+                        <div class="text-4xl font-black text-un-blue mb-2" id="detScore">0/100</div>
+                        <p class="text-xs text-blue-600 font-medium" id="detRecommendation"></p>
+                    </div>
+                </div>
+
+                <!-- Right Column: Professional Details & Actions -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Profil & Experience -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 space-y-6">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-400 uppercase">Profession</h5>
+                                <p class="text-sm font-semibold text-gray-800" id="detProfession"></p>
+                            </div>
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-400 uppercase">Niveau d'Études</h5>
+                                <p class="text-sm font-semibold text-gray-800" id="detEducation"></p>
+                            </div>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-bold text-gray-400 uppercase mb-2">Expérience Professionnelle</h5>
+                            <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap" id="detExperience"></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-400 uppercase mb-1">Compétences</h5>
+                                <p class="text-sm text-gray-700" id="detSkills"></p>
+                            </div>
+                            <div>
+                                <h5 class="text-xs font-bold text-gray-400 uppercase mb-1">Langues</h5>
+                                <p class="text-sm text-gray-700" id="detLanguages"></p>
+                            </div>
+                        </div>
+                        <div>
+                            <h5 class="text-xs font-bold text-gray-400 uppercase mb-2">Lettre de Motivation</h5>
+                            <p class="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap p-3 bg-gray-50 rounded-lg border border-gray-100" id="detMotivation"></p>
+                        </div>
+                    </div>
+
+                    <!-- Workflow & Communication -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Status Update -->
+                        <div class="bg-white p-6 rounded-xl border border-gray-200">
+                            <h4 class="text-sm font-bold text-gray-800 mb-4">Modifier le Statut</h4>
+                            <div class="flex gap-2">
+                                <select id="statusSelect" class="flex-grow px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                                    <option value="En attente d'analyse">En attente d'analyse</option>
+                                    <option value="Analyse en cours">Analyse en cours</option>
+                                    <option value="Entretien programmé">Entretien programmé</option>
+                                    <option value="Profil retenu">Profil retenu</option>
+                                    <option value="Profil non retenu">Profil non retenu</option>
+                                </select>
+                                <button onclick="updateStatus()" class="px-4 py-2 un-blue text-white rounded-lg text-xs font-bold hover-un-blue transition">Mettre à jour</button>
+                            </div>
+                        </div>
+
+                        <!-- Quick Response -->
+                        <div class="bg-white p-6 rounded-xl border border-gray-200">
+                            <h4 class="text-sm font-bold text-gray-800 mb-4">Répondre au candidat</h4>
+                            <button onclick="openResponseModal()" class="w-full py-2 border border-un-blue text-un-blue rounded-lg text-xs font-bold hover:bg-blue-50 transition">
+                                <i class="fa-solid fa-paper-plane mr-1.5"></i> Rédiger une réponse
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- History Tab -->
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="p-4 bg-gray-50 border-b border-gray-100 font-bold text-xs text-gray-500 uppercase">Historique & Communications</div>
+                        <div class="p-0 max-h-60 overflow-y-auto" id="candidateHistory">
+                            <!-- Dynamic History Items -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESPONSE MODAL -->
+    <div id="responseModal" class="fixed inset-0 z-[60] bg-black/60 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-bold text-gray-800">Envoyer une réponse</h3>
+                <button onclick="closeResponseModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <form id="responseForm" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Objet (Optionnel)</label>
+                    <input type="text" name="subject" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Message</label>
+                    <textarea name="message" required rows="5" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue" placeholder="Saisissez votre message personnalisé..."></textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Canal d'envoi</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="channel" value="email" checked class="hidden peer">
+                            <div class="p-2 text-center border rounded-lg text-xs font-semibold text-gray-500 peer-checked:border-un-blue peer-checked:text-un-blue peer-checked:bg-blue-50 transition">
+                                <i class="fa-solid fa-envelope block text-lg mb-1"></i> Email
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="channel" value="whatsapp" class="hidden peer">
+                            <div class="p-2 text-center border rounded-lg text-xs font-semibold text-gray-500 peer-checked:border-green-500 peer-checked:text-green-600 peer-checked:bg-green-50 transition">
+                                <i class="fa-brands fa-whatsapp block text-lg mb-1"></i> WhatsApp
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="channel" value="sms" class="hidden peer">
+                            <div class="p-2 text-center border rounded-lg text-xs font-semibold text-gray-500 peer-checked:border-blue-600 peer-checked:text-blue-600 peer-checked:bg-blue-50 transition">
+                                <i class="fa-solid fa-comment-sms block text-lg mb-1"></i> SMS
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-3 un-blue text-white rounded-lg font-bold text-sm shadow hover-un-blue transition">
+                    Envoyer le message
+                </button>
+            </form>
+        </div>
+    </div>
+
+        <!-- GUIDE MODAL -->
+    <div id="guideModal" class="fixed inset-0 z-[70] bg-black/60 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-100 bg-slate-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-800 text-lg">Guide d'Utilisation du Portail Administrateur</h3>
+                <button onclick="closeGuide()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+            <div class="p-8 overflow-y-auto space-y-6 text-sm text-gray-600 leading-relaxed">
+                <section>
+                    <h4 class="font-bold text-un-blue uppercase text-xs tracking-widest mb-2">1. Gestion des Candidatures</h4>
+                    <p>Le tableau de bord affiche en temps réel toutes les candidatures. Vous pouvez filtrer par statut ou rechercher un candidat par son nom ou sa profession. Cliquez sur un candidat pour ouvrir sa fiche complète.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-un-blue uppercase text-xs tracking-widest mb-2">2. Workflow de Sélection</h4>
+                    <p>Utilisez le menu déroulant dans la fiche candidat pour faire évoluer le statut : 
+                        <br><strong>En attente</strong> &rarr; <strong>Analyse en cours</strong> &rarr; <strong>Entretien</strong> &rarr; <strong>Retenu/Refusé</strong>.
+                        Chaque changement est historisé automatiquement.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-un-blue uppercase text-xs tracking-widest mb-2">3. Communication</h4>
+                    <p>L'onglet "Répondre" permet d'envoyer un message via Email, WhatsApp ou SMS. Notez que si le SMTP n'est pas configuré, le système simulera l'envoi dans les logs.</p>
+                </section>
+                <section>
+                    <h4 class="font-bold text-un-blue uppercase text-xs tracking-widest mb-2">4. Gestion des Offres & Paramètres</h4>
+                    <p>Via la barre latérale, vous pouvez créer de nouvelles offres d'emploi ou modifier vos informations de profil et la configuration officielle de l'organisation.</p>
+                </section>
+            </div>
+            <div class="p-6 border-t border-gray-100 flex justify-end">
+                <button onclick="closeGuide()" class="px-6 py-2 bg-slate-800 text-white rounded-lg font-bold text-sm hover:bg-slate-700 transition">J'ai compris</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Sound (Silent Base64)
+ -->
+    <audio id="notifSound" src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA="></audio>
+
+    <script>
+        const socket = io();
+        let currentCandidateId = null;
+        let notificationCount = 0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initAdmin();
+            loadStats();
+            loadCandidates();
+
+            // Search & Filter
+            document.getElementById('searchCandidates').addEventListener('input', loadCandidates);
+            document.getElementById('filterStatus').addEventListener('change', loadCandidates);
+            
+            // Notif Dropdown
+            document.getElementById('notifBtn').addEventListener('click', () => {
+                document.getElementById('notifDropdown').classList.toggle('hidden');
+            });
+        });
+
+        async function initAdmin() {
+            try {
+                const res = await fetch('/api/admin/verify');
+                if (!res.ok) window.location.href = '/recru';
+                const data = await res.json();
+                document.getElementById('adminName').innerText = data.admin.full_name;
+            } catch (e) {
+                window.location.href = '/recru';
+            }
+        }
+
+        function openGuide() {
+            document.getElementById('guideModal').classList.remove('hidden');
+        }
+
+        function closeGuide() {
+            document.getElementById('guideModal').classList.add('hidden');
+        }
+
+        }
+
+        // ============================================
+        // SOCKET.IO REAL-TIME
+        // ============================================
+        socket.on('new_candidate', (candidate) => {
+            addNotification(`Nouvelle candidature : ${candidate.first_name} ${candidate.last_name} (${candidate.profession})`);
+            playNotificationSound();
+            loadStats();
+            loadCandidates();
+        });
+
+        socket.on('stats_update', (stats) => {
+            updateStatsUI(stats);
+        });
+
+        socket.on('status_updated', (data) => {
+            loadCandidates();
+            loadStats();
+        });
+
+        socket.on('response_sent', (data) => {
+            if (currentCandidateId === data.candidate_id) {
+                loadCandidateDetails(data.candidate_id);
+            }
+        });
+
+        function addNotification(text) {
+            notificationCount++;
+            const badge = document.getElementById('notifBadge');
+            badge.innerText = notificationCount;
+            badge.classList.remove('hidden');
+
+            const list = document.getElementById('notifList');
+            if (list.querySelector('p')) list.innerHTML = '';
+
+            const div = document.createElement('div');
+            div.className = "p-3 border-b border-gray-100 text-xs hover:bg-gray-50 transition cursor-pointer";
+            div.innerHTML = `<div class="font-bold text-gray-800 mb-1">🔔 Notification</div><div class="text-gray-500">${text}</div>`;
+            list.prepend(div);
+        }
+
+        function playNotificationSound() {
+            const sound = document.getElementById('notifSound');
+            sound.play().catch(() => {});
+        }
+
+        // ============================================
+        // DATA LOADING & UI
+        // ============================================
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/admin/stats');
+                const data = await res.json();
+                updateStatsUI(data);
+            } catch (e) {}
+        }
+
+        function updateStatsUI(stats) {
+            document.getElementById('stat-total').innerText = stats.total_candidates || 0;
+            document.getElementById('stat-pending').innerText = stats.pending_candidates || 0;
+            document.getElementById('stat-accepted').innerText = stats.accepted_candidates || 0;
+            document.getElementById('stat-rejected').innerText = stats.rejected_candidates || 0;
+        }
+
+        async function loadCandidates() {
+            const search = document.getElementById('searchCandidates').value;
+            const status = document.getElementById('filterStatus').value;
+            
+            try {
+                const res = await fetch(`/api/admin/candidates?search=${search}&status=${status}`);
+                const data = await res.json();
+                
+                const body = document.getElementById('candidatesTableBody');
+                if (data.length === 0) {
+                    body.innerHTML = `<tr><td colspan="5" class="px-6 py-12 text-center text-gray-400">Aucun candidat trouvé.</td></tr>`;
+                    return;
+                }
+
+                body.innerHTML = data.map(c => {
+                    const statusClass = c.status === 'En attente d\'analyse' ? 'status-pending' : 
+                                      c.status === 'Profil retenu' ? 'status-accepted' : 
+                                      c.status === 'Profil non retenu' ? 'status-rejected' : 'status-review';
+                    
+                    return `
+                        <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="loadCandidateDetails(${c.id})">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <div class="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+                                        ${c.first_name[0]}${c.last_name[0]}
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-900">${c.first_name} ${c.last_name}</div>
+                                        <div class="text-[10px] text-gray-400 font-mono">${c.reference_number}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-gray-600">${c.job_title || 'Spontanée'}</td>
+                            <td class="px-6 py-4">
+                                <span class="font-mono font-bold ${c.score >= 70 ? 'text-green-600' : 'text-gray-600'}">${c.score}/100</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusClass}">${c.status}</span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <button class="text-un-blue hover:text-blue-800 font-bold text-xs transition">Ouvrir <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {}
+        }
+
+        async function loadCandidateDetails(id) {
+            currentCandidateId = id;
+            try {
+                const res = await fetch(`/api/admin/candidates/${id}`);
+                const c = await res.json();
+
+                document.getElementById('modalCandidateName').innerText = `${c.first_name} ${c.last_name}`;
+                document.getElementById('modalCandidateRef').innerText = `Réf: ${c.reference_number}`;
+                document.getElementById('modalInitials').innerText = `${c.first_name[0]}${c.last_name[0]}`.toUpperCase();
+                
+                document.getElementById('detEmail').innerText = c.email;
+                document.getElementById('detPhone').innerText = c.phone;
+                document.getElementById('detWhatsapp').innerText = c.whatsapp;
+                document.getElementById('detLocation').innerText = `${c.country}, ${c.city}`;
+                
+                document.getElementById('detProfession').innerText = c.profession;
+                document.getElementById('detEducation').innerText = c.education;
+                document.getElementById('detExperience').innerText = c.experience;
+                document.getElementById('detSkills').innerText = c.skills;
+                document.getElementById('detLanguages').innerText = c.languages;
+                document.getElementById('detMotivation').innerText = c.motivation_letter || 'Aucune lettre fournie.';
+
+                document.getElementById('detScore').innerText = `${c.score}/100`;
+                document.getElementById('detRecommendation').innerText = c.analysis.education.label + " score: " + c.analysis.education.score + "/" + c.analysis.education.max;
+                // Note: I'll simplify the recommendation text to a general one
+                document.getElementById('detRecommendation').innerText = `Recommandation basée sur le score global de ${c.score}`;
+
+                // Documents
+                const docs = [];
+                if (c.cv_filename) docs.push({type: 'cv', label: 'Curriculum Vitae', file: c.cv_filename});
+                if (c.diploma_filename) docs.push({type: 'diploma', label: 'Diplôme', file: c.diploma_filename});
+                if (c.cert_filename) docs.push({type: 'cert', label: 'Certifications', file: c.cert_filename});
+                
+                document.getElementById('docLinks').innerHTML = docs.map(d => `
+                    <a href="/api/admin/candidates/${id}/document/${d.type}" target="_blank" class="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:border-un-blue hover:text-un-blue transition">
+                        <span><i class="fa-solid fa-file-pdf mr-2 text-red-500"></i>${d.label}</span>
+                        <i class="fa-solid fa-download text-gray-400"></i>
+                    </a>
+                `).join('') || '<p class="text-xs text-gray-400 text-center">Aucun document joint</p>';
+
+                // Status
+                document.getElementById('statusSelect').value = c.status;
+
+                // History
+                const historyHtml = [];
+                if (c.history && c.history.length > 0) {
+                    c.history.forEach(h => {
+                        historyHtml.push(`
+                            <div class="p-3 border-l-2 border-gray-200 ml-2 pl-4 relative">
+                                <div class="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-gray-300"></div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-bold text-gray-700">${h.status}</span>
+                                    <span class="text-[10px] text-gray-400">${new Date(h.updated_at).toLocaleString()}</span>
+                                </div>
+                                <div class="text-[10px] text-gray-500">Action par: ${h.admin_username}</div>
+                            </div>
+                        `);
+                    });
+                }
+
+                if (c.responses && c.responses.length > 0) {
+                    c.responses.forEach(r => {
+                        historyHtml.push(`
+                            <div class="p-3 border-l-2 border-un-blue ml-2 pl-4 relative bg-blue-50/30">
+                                <div class="absolute -left-[5px] top-2 h-2 w-2 rounded-full bg-un-blue"></div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-xs font-bold text-un-blue">Réponse via ${r.channel.toUpperCase()}</span>
+                                    <span class="text-[10px] text-gray-400">${new Date(r.sent_at).toLocaleString()}</span>
+                                </div>
+                                <div class="text-xs text-gray-600 italic mb-1">"${r.message.substring(0, 60)}..."</div>
+                                <div class="text-[10px] text-gray-500">Statut: ${r.status} | Admin: ${r.admin_username}</div>
+                            </div>
+                        `);
+                    });
+                }
+
+                document.getElementById('candidateHistory').innerHTML = historyHtml.join('') || '<p class="p-4 text-xs text-gray-400 text-center">Aucun historique disponible</p>';
+
+                document.getElementById('detailModal').classList.remove('hidden');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function updateStatus() {
+            const status = document.getElementById('statusSelect').value;
+            try {
+                const res = await fetch(`/api/admin/candidates/${currentCandidateId}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                if (res.ok) {
+                    loadCandidateDetails(currentCandidateId);
+                    loadCandidates();
+                    loadStats();
+                }
+            } catch (e) {}
+        }
+
+        function openResponseModal() {
+            document.getElementById('responseModal').classList.remove('hidden');
+        }
+
+        function closeResponseModal() {
+            document.getElementById('responseModal').classList.add('hidden');
+            document.getElementById('responseForm').reset();
+        }
+
+        document.getElementById('responseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const body = {
+                channel: formData.get('channel'),
+                subject: formData.get('subject'),
+                message: formData.get('message')
+            };
+
+            try {
+                const res = await fetch(`/api/admin/candidates/${currentCandidateId}/respond`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (res.ok) {
+                    closeResponseModal();
+                    loadCandidateDetails(currentCandidateId);
+                }
+            } catch (e) {}
+        });
+
+        function closeModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+            currentCandidateId = null;
+        }
+
+        function logout() {
+            fetch('/api/admin/logout').then(() => window.location.href = '/admin');
+        }
+    </script>
+</body>
+</html>

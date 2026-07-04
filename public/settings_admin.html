@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuration Services - ONU</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-10">
+    <div class="max-w-4xl mx-auto">
+        <h2 class="text-2xl font-bold mb-6">Configuration des Services API</h2>
+        <form id="configForm" class="bg-white p-8 rounded-2xl border shadow-sm grid grid-cols-2 gap-6">
+            <div class="col-span-2 text-xs font-bold text-gray-500 uppercase">Paramètres E-mail (SMTP)</div>
+            <input type="text" name="email_user" placeholder="E-mail" class="p-2 border rounded">
+            <input type="password" name="email_pass" placeholder="Mot de passe app" class="p-2 border rounded">
+            
+            <div class="col-span-2 text-xs font-bold text-gray-500 uppercase mt-4">Configuration WhatsApp Business</div>
+            <input type="text" name="wa_phone_id" placeholder="Phone Number ID" class="p-2 border rounded">
+            <input type="text" name="wa_token" placeholder="Access Token" class="p-2 border rounded">
+            
+            <div class="col-span-2 text-xs font-bold text-gray-500 uppercase mt-4">Configuration SMS</div>
+            <input type="text" name="sms_api_key" placeholder="API Key" class="p-2 border rounded col-span-2">
+            
+            <button type="submit" class="bg-blue-600 text-white p-3 rounded-lg font-bold col-span-2">Sauvegarder toutes les configurations</button>
+        </form>
+    </div>
+    <script>
+        document.getElementById('configForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = Object.fromEntries(new FormData(e.target));
+            await fetch('/api/admin/config', { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
+            alert('Configuration sauvegardée et active !');
+        };
+    </script>
+</body>
+</html>
