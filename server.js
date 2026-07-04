@@ -5,6 +5,8 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const multer = require('multer');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 // Empêcher le crash de Cloudinary si CLOUDINARY_URL est mal configuré
@@ -55,6 +57,37 @@ app.get('/recru', (req, res) => res.sendFile(path.join(__dirname, 'public', 'adm
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/admin/jobs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'jobs_admin.html')));
 app.get('/admin/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings_admin.html')));
+
+// API Admin Auth
+app.post('/api/admin/login', async (req, res) => {
+    const { username, password } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM admins WHERE username = $1 OR email = $1', [username]);
+        const admin = result.rows[0];
+
+        if (!admin || !(await bcrypt.compare(password, admin.password))) {
+            return res.status(401).json({ error: 'Identifiants incorrects' });
+        }
+
+        const token = jwt.sign({ id: admin.id, username: admin.username }, JWT_SECRET, { expiresIn: '24h' });
+        res.cookie('admin_token', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
+        res.json({ success: true, username: admin.username });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/admin/verify', (req, res) => {
+    const token = req.cookies.admin_token;
+    if (!token) return res.status(401).json({ error: 'Non authentifié' });
+
+    try {
+        jwt.verify(token, JWT_SECRET);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(401).json({ error: 'Session expirée' });
+    }
+});
 
 // API Jobs
 app.get('/api/jobs', (req, res) => {
