@@ -159,6 +159,70 @@ app.put('/api/admin/manage/status', isSuperAdmin, async (req, res) => {
     }
 });
 
+// Uploads middleware pour les candidatures
+const uploadCandidates = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype === 'application/pdf' || file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Seuls les fichiers PDF et images sont acceptés'), false);
+        }
+    }
+});
+
+app.post('/api/apply', uploadCandidates.fields([
+    { name: 'cv', maxCount: 1 },
+    { name: 'diploma', maxCount: 1 },
+    { name: 'cert', maxCount: 1 }
+]), async (req, res) => {
+    try {
+        const data = req.body;
+        const files = req.files;
+
+        const reference_number = `UN-${new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+        
+        const cv_filename = files?.cv ? files.cv[0].path : null;
+        const diploma_filename = files?.diploma ? files.diploma[0].path : null;
+        const cert_filename = files?.cert ? files.cert[0].path : null;
+
+        const query = `
+            INSERT INTO candidates (
+                reference_number, first_name, last_name, email, phone, whatsapp, 
+                profession, country, city, education, experience, experience_years, 
+                skills, languages, certifications, motivation_letter, 
+                cv_filename, diploma_filename, cert_filename, offer_id
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+            RETURNING id`;
+
+        const values = [
+            reference_number, data.first_name, data.last_name, data.email, data.phone, data.whatsapp,
+            data.profession, data.country, data.city, data.education, data.experience, parseInt(data.experience_years),
+            data.skills, data.languages, data.certifications, data.motivation_letter,
+            cv_filename, diploma_filename, cert_filename, data.offer_id || null
+        ];
+
+        const result = await pool.query(query, values);
+        const candidateId = result.rows[0].id;
+
+        // Envoyer l'email de confirmation en arrière-plan
+        const { sendAcknowledgmentEmail } = require('./emailService');
+        sendAcknowledgmentEmail({ 
+            id: candidateId, 
+            first_name: data.first_name, 
+            last_name: data.last_name, 
+            email: data.email, 
+            reference_number 
+        }).catch(err => console.error('Email Ack Error:', err));
+
+        res.json({ success: true, reference_number });
+    } catch (err) {
+        console.error('Apply Error:', err);
+        res.status(500).json({ error: 'Erreur lors de l\'enregistrement de votre candidature.' });
+    }
+});
+
 // API Jobs
 
 
