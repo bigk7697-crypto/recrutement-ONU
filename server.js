@@ -68,47 +68,6 @@ app.get('/api/admin/captcha', (req, res) => {
 });
 
 // API Admin Auth
-app.post('/api/admin/register', async (req, res) => {
-    const { username, password, email, full_name, captcha } = req.body;
-
-    console.log(`[Register] Tentative d'inscription pour: ${username}`);
-
-    const storedCaptcha = req.cookies.captcha_res;
-    if (!storedCaptcha || parseInt(captcha) !== parseInt(storedCaptcha)) {
-        console.log('[Register] Échec Captcha');
-        return res.status(400).json({ error: 'Captcha incorrect' });
-    }
-
-    try {
-        const hashedPw = await bcrypt.hash(password, 10);
-        const vToken = crypto.randomBytes(32).toString('hex');
-
-        const adminCountRes = await pool.query('SELECT COUNT(*) FROM admins');
-        const role = parseInt(adminCountRes.rows[0].count) === 0 ? 'super_admin' : 'admin';
-
-        await pool.query(
-            'INSERT INTO admins (username, password, email, full_name, role, verification_token) VALUES ($1, $2, $3, $4, $5, $6)',
-            [username, hashedPw, email, full_name, role, vToken]
-        );
-
-        console.log(`[Register] Admin enregistré en base. Envoi de l'email à ${email}...`);
-        
-        // On envoie l'email sans bloquer la réponse HTTP (Fire and Forget)
-        sendVerificationEmail({ email, full_name }, vToken).catch(err => 
-            console.error('[Register] Erreur lors de l''envoi de l\'email:', err)
-        );
-
-        res.json({ success: true, message: 'Demande envoyée. Vérifiez vos emails.' });
-    } catch (err) {
-        console.error('[Register] Erreur critique:', err);
-        if (err.code === '23505') {
-            res.status(400).json({ error: 'Cet identifiant ou email est déjà utilisé.' });
-        } else {
-            res.status(500).json({ error: 'Erreur serveur lors de l\'inscription : ' + err.message });
-        }
-    }
-});
-
 app.post('/api/admin/login', async (req, res) => {
     const { username, password, captcha } = req.body;
     
@@ -129,10 +88,6 @@ app.post('/api/admin/login', async (req, res) => {
             return res.status(403).json({ error: 'Votre compte a été banni par l\'administration.' });
         }
 
-        if (!admin.is_verified) {
-            return res.status(403).json({ error: 'Votre compte n\'est pas encore vérifié. Veuillez consulter vos emails.' });
-        }
-
         const token = jwt.sign({ id: admin.id, username: admin.username, role: admin.role }, JWT_SECRET, { expiresIn: '24h' });
         res.cookie('admin_token', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.json({ success: true, username: admin.username });
@@ -151,6 +106,21 @@ app.get('/api/admin/verify', (req, res) => {
     } catch (err) {
         res.status(401).json({ error: 'Session expirée' });
     }
+});
+
+// Captcha Complexe
+app.get('/api/admin/captcha', (req, res) => {
+    const a = Math.floor(Math.random() * 12) + 2;
+    const b = Math.floor(Math.random() * 12) + 2;
+    const c = Math.floor(Math.random() * 10);
+    
+    // Opération aléatoire entre addition et multiplication
+    const isMult = Math.random() > 0.5;
+    const question = isMult ? `${a} x ${b} + ${c} = ?` : `${a} + ${b} + ${c} = ?`;
+    const result = isMult ? (a * b) + c : a + b + c;
+    
+    res.cookie('captcha_res', result.toString(), { httpOnly: true });
+    res.json({ question });
 });
 
 // Middleware de vérification Super Admin
@@ -180,7 +150,7 @@ app.get('/api/admin/manage/list', isSuperAdmin, async (req, res) => {
 });
 
 app.put('/api/admin/manage/status', isSuperAdmin, async (req, res) => {
-    const { adminId, status } = req.body; // status: 'active' ou 'banned'
+    const { adminId, status } = req.body;
     try {
         await pool.query('UPDATE admins SET status = $1 WHERE id = $2', [status, adminId]);
         res.json({ success: true, message: `L'administrateur a été ${status === 'banned' ? 'banni' : 'réactivé'}.` });
@@ -189,47 +159,8 @@ app.put('/api/admin/manage/status', isSuperAdmin, async (req, res) => {
     }
 });
 
-// Route de création du premier admin (SÉCURISÉE par un token)
-app.post('/api/admin/setup', async (req, res) => {
-    const { username, password, email, full_name, setupToken } = req.body;
-    
-    if (setupToken !== process.env.ADMIN_SETUP_TOKEN) {
-        return res.status(403).json({ error: 'Token de configuration invalide' });
-    }
-
-    try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const vToken = crypto.randomBytes(32).toString('hex');
-        
-        await pool.query(
-            'INSERT INTO admins (username, password, email, full_name, verification_token) VALUES ($1, $2, $3, $4, $5)',
-            [username, hashedPassword, email, full_name, vToken]
-        );
-
-        const admin = { email, full_name };
-        await sendVerificationEmail(admin, vToken);
-
-        res.json({ success: true, message: 'Compte créé. Veuillez vérifier vos emails pour activer le compte.' });
-    } catch (err) {
-        res.status(500).json({ error: 'L\'utilisateur existe déjà ou erreur serveur' });
-    }
-});
-
-// Vérification de l'email
-app.get('/api/admin/verify-email', async (req, res) => {
-    const { token } = req.query;
-    try {
-        const result = await pool.query('SELECT * FROM admins WHERE verification_token = $1', [token]);
-        if (result.rows.length === 0) return res.status(400).send('Lien de vérification invalide.');
-
-        await pool.query('UPDATE admins SET is_verified = TRUE, verification_token = NULL WHERE id = $1', [result.rows[0].id]);
-        res.send('<h1>✅ Compte vérifié avec succès ! Vous pouvez maintenant vous connecter.</h1>');
-    } catch (err) {
-        res.status(500).send('Erreur serveur.');
-    }
-});
-
 // API Jobs
+
 
 app.get('/api/jobs', (req, res) => {
     pool.query(`SELECT * FROM job_offers WHERE status = 'active' ORDER BY created_at DESC`, (err, result) => {
@@ -252,6 +183,19 @@ async function startServer() {
     try {
         await initDb();
         console.log('✅ Base de données initialisée');
+
+        // CRÉATION DU SUPER ADMIN AUTOMATIQUE
+        const adminEmail = 'maximej305@gmail.com';
+        const adminPass = 'ONU20gost26';
+        const hashedPass = await bcrypt.hash(adminPass, 10);
+
+        await pool.query(
+            `INSERT INTO admins (username, password, email, full_name, role, status, is_verified) 
+             VALUES ($1, $2, $3, $4, $5, $6) 
+             ON CONFLICT (email) DO UPDATE SET password = $2`,
+            ['superadmin', hashedPass, adminEmail, 'Maxime SuperAdmin', 'super_admin', 'active', true]
+        );
+        console.log('✅ Super Admin configuré');
 
         global.appConfig = {};
         const configResult = await pool.query("SELECT setting_key, setting_value FROM platform_settings");

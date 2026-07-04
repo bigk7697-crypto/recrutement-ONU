@@ -72,13 +72,6 @@
                     <span id="loginSpinner" class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2 hidden"></span>
                     <i class="fa-solid fa-right-to-bracket mr-2"></i> Connexion Sécurisée
                 </button>
-                
-                <div class="text-center mt-6 pt-6 border-t border-gray-100">
-                    <p class="text-xs text-gray-500 mb-3">Vous n'avez pas d'accès administrateur ?</p>
-                    <a href="/register-admin" class="inline-flex items-center justify-center px-4 py-2 rounded-lg border border-un-blue text-un-blue text-xs font-bold hover:bg-blue-50 transition duration-200">
-                        <i class="fa-solid fa-user-plus mr-2"></i> Demander un accès
-                    </a>
-                </div>
             </form>
         </div>
     </main>
@@ -136,6 +129,8 @@
                 const data = await res.json();
     
                 if (!res.ok) {
+                    // Rafraîchir le captcha en cas d'erreur
+                    await refreshCaptcha();
                     throw new Error(data.error || 'Connexion échouée.');
                 }
     
@@ -147,6 +142,17 @@
                 alertBox.classList.remove('hidden');
                 submitBtn.disabled = false;
                 spinner.classList.add('hidden');
+            }
+        }
+
+        async function refreshCaptcha() {
+            try {
+                const res = await fetch('/api/admin/captcha');
+                const data = await res.json();
+                document.getElementById('captchaQuestion').innerText = data.question;
+                document.getElementById('captchaInput').value = '';
+            } catch (e) {
+                console.error('Captcha refresh failed');
             }
         }
 
