@@ -71,8 +71,11 @@ app.get('/api/admin/captcha', (req, res) => {
 app.post('/api/admin/register', async (req, res) => {
     const { username, password, email, full_name, captcha } = req.body;
 
+    console.log(`[Register] Tentative d'inscription pour: ${username}`);
+
     const storedCaptcha = req.cookies.captcha_res;
     if (!storedCaptcha || parseInt(captcha) !== parseInt(storedCaptcha)) {
+        console.log('[Register] Échec Captcha');
         return res.status(400).json({ error: 'Captcha incorrect' });
     }
 
@@ -88,10 +91,16 @@ app.post('/api/admin/register', async (req, res) => {
             [username, hashedPw, email, full_name, role, vToken]
         );
 
-        await sendVerificationEmail({ email, full_name }, vToken);
+        console.log(`[Register] Admin enregistré en base. Envoi de l'email à ${email}...`);
+        
+        // On envoie l'email sans bloquer la réponse HTTP (Fire and Forget)
+        sendVerificationEmail({ email, full_name }, vToken).catch(err => 
+            console.error('[Register] Erreur lors de l''envoi de l\'email:', err)
+        );
+
         res.json({ success: true, message: 'Demande envoyée. Vérifiez vos emails.' });
     } catch (err) {
-        console.error('Registration Error:', err);
+        console.error('[Register] Erreur critique:', err);
         if (err.code === '23505') {
             res.status(400).json({ error: 'Cet identifiant ou email est déjà utilisé.' });
         } else {
