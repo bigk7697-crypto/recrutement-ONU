@@ -51,6 +51,7 @@ app.get('/apply', (req, res) => res.sendFile(path.join(__dirname, 'public', 'app
 app.get('/jobs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'jobs.html')));
 app.get('/status', (req, res) => res.sendFile(path.join(__dirname, 'public', 'status.html')));
 app.get('/recru', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+app.get('/register-admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'register_admin.html')));
 app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 'dashboard.html')));
 app.get('/admin/jobs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'jobs_admin.html')));
 app.get('/admin/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings_admin.html')));
@@ -67,10 +68,37 @@ app.get('/api/admin/captcha', (req, res) => {
 });
 
 // API Admin Auth
+app.post('/api/admin/register', async (req, res) => {
+    const { username, password, email, full_name, captcha } = req.body;
+
+    const storedCaptcha = req.cookies.captcha_res;
+    if (!storedCaptcha || parseInt(captcha) !== parseInt(storedCaptcha)) {
+        return res.status(400).json({ error: 'Captcha incorrect' });
+    }
+
+    try {
+        const hashedPw = await bcrypt.hash(password, 10);
+        const vToken = crypto.randomBytes(32).toString('hex');
+
+        // Le premier admin inscrit devient automatiquement Super Admin
+        const adminCountRes = await pool.query('SELECT COUNT(*) FROM admins');
+        const role = parseInt(adminCountRes.rows[0].count) === 0 ? 'super_admin' : 'admin';
+
+        await pool.query(
+            'INSERT INTO admins (username, password, email, full_name, role, verification_token) VALUES ($1, $2, $3, $4, $5, $6)',
+            [username, hashedPw, email, full_name, role, vToken]
+        );
+
+        await sendVerificationEmail({ email, full_name }, vToken);
+        res.json({ success: true, message: 'Demande envoyée. Vérifiez vos emails.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Cet identifiant ou email est déjà utilisé.' });
+    }
+});
+
 app.post('/api/admin/login', async (req, res) => {
     const { username, password, captcha } = req.body;
     
-    // Vérification Captcha
     const storedCaptcha = req.cookies.captcha_res;
     if (!storedCaptcha || parseInt(captcha) !== parseInt(storedCaptcha)) {
         return res.status(400).json({ error: 'Captcha incorrect' });
@@ -84,11 +112,15 @@ app.post('/api/admin/login', async (req, res) => {
             return res.status(401).json({ error: 'Identifiants incorrects' });
         }
 
+        if (admin.status === 'banned') {
+            return res.status(403).json({ error: 'Votre compte a été banni par l\'administration.' });
+        }
+
         if (!admin.is_verified) {
             return res.status(403).json({ error: 'Votre compte n\'est pas encore vérifié. Veuillez consulter vos emails.' });
         }
 
-        const token = jwt.sign({ id: admin.id, username: admin.username }, JWT_SECRET, { expiresIn: '24h' });
+        const token = jwt.sign({ id: admin.id, username: admin.username, role: admin.role }, JWT_SECRET, { expiresIn: '24h' });
         res.cookie('admin_token', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 });
         res.json({ success: true, username: admin.username });
     } catch (err) {
@@ -105,6 +137,42 @@ app.get('/api/admin/verify', (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(401).json({ error: 'Session expirée' });
+    }
+});
+
+// Middleware de vérification Super Admin
+function isSuperAdmin(req, res, next) {
+    const token = req.cookies.admin_token;
+    if (!token) return res.status(401).json({ error: 'Non authentifié' });
+
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        if (decoded.role !== 'super_admin') {
+            return res.status(403).json({ error: 'Accès refusé : réservé au Super Administrateur' });
+        }
+        next();
+    } catch (err) {
+        res.status(401).json({ error: 'Session expirée' });
+    }
+}
+
+// Gestion des Admins (Réservé au Super Admin)
+app.get('/api/admin/manage/list', isSuperAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, username, email, role, status, is_verified FROM admins');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/admin/manage/status', isSuperAdmin, async (req, res) => {
+    const { adminId, status } = req.body; // status: 'active' ou 'banned'
+    try {
+        await pool.query('UPDATE admins SET status = $1 WHERE id = $2', [status, adminId]);
+        res.json({ success: true, message: `L'administrateur a été ${status === 'banned' ? 'banni' : 'réactivé'}.` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -149,6 +217,7 @@ app.get('/api/admin/verify-email', async (req, res) => {
 });
 
 // API Jobs
+
 app.get('/api/jobs', (req, res) => {
     pool.query(`SELECT * FROM job_offers WHERE status = 'active' ORDER BY created_at DESC`, (err, result) => {
         if (err) return res.status(500).json({ error: err.message });

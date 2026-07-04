@@ -8,7 +8,7 @@ const pool = new Pool({
 // Initialisation des tables (doit être exécuté une seule fois à la mise en place)
 async function initDb() {
     const queries = [
-        `CREATE TABLE IF NOT EXISTS admins (id SERIAL PRIMARY KEY, username TEXT UNIQUE, password TEXT, email TEXT UNIQUE, full_name TEXT, is_verified BOOLEAN DEFAULT FALSE, verification_token TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+        `CREATE TABLE IF NOT EXISTS admins (id SERIAL PRIMARY KEY, username TEXT UNIQUE, password TEXT, email TEXT UNIQUE, full_name TEXT, role TEXT DEFAULT 'admin', status TEXT DEFAULT 'active', is_verified BOOLEAN DEFAULT FALSE, verification_token TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS job_offers (id SERIAL PRIMARY KEY, title TEXT, department TEXT, location TEXT, type TEXT, description TEXT, requirements TEXT, salary_range TEXT, deadline DATE, status TEXT DEFAULT 'active', created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS candidates (id SERIAL PRIMARY KEY, reference_number TEXT UNIQUE, first_name TEXT, last_name TEXT, email TEXT UNIQUE, phone TEXT, whatsapp TEXT, profession TEXT, country TEXT, city TEXT, education TEXT, experience TEXT, experience_years INTEGER, skills TEXT, languages TEXT, certifications TEXT, motivation_letter TEXT, cv_filename TEXT, diploma_filename TEXT, cert_filename TEXT, offer_id INTEGER, status TEXT DEFAULT 'En attente d''analyse', score INTEGER DEFAULT 0, analyzed_at TIMESTAMP, decision TEXT, decision_date TIMESTAMP, rejection_reason TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
         `CREATE TABLE IF NOT EXISTS platform_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT)`,
