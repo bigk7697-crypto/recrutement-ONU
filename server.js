@@ -80,7 +80,6 @@ app.post('/api/admin/register', async (req, res) => {
         const hashedPw = await bcrypt.hash(password, 10);
         const vToken = crypto.randomBytes(32).toString('hex');
 
-        // Le premier admin inscrit devient automatiquement Super Admin
         const adminCountRes = await pool.query('SELECT COUNT(*) FROM admins');
         const role = parseInt(adminCountRes.rows[0].count) === 0 ? 'super_admin' : 'admin';
 
@@ -92,7 +91,12 @@ app.post('/api/admin/register', async (req, res) => {
         await sendVerificationEmail({ email, full_name }, vToken);
         res.json({ success: true, message: 'Demande envoyée. Vérifiez vos emails.' });
     } catch (err) {
-        res.status(500).json({ error: 'Cet identifiant ou email est déjà utilisé.' });
+        console.error('Registration Error:', err);
+        if (err.code === '23505') {
+            res.status(400).json({ error: 'Cet identifiant ou email est déjà utilisé.' });
+        } else {
+            res.status(500).json({ error: 'Erreur serveur lors de l\'inscription : ' + err.message });
+        }
     }
 });
 
