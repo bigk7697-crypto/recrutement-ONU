@@ -48,14 +48,23 @@
                 </div>
 
                 <div>
-                    <div class="flex justify-between items-center mb-2">
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Mot de passe</label>
-                    </div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Mot de passe</label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
                             <i class="fa-solid fa-key"></i>
                         </div>
                         <input type="password" id="password" required placeholder="••••••••" class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-gray-50 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <!-- Captcha Section -->
+                <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Vérification de sécurité</label>
+                    <div class="flex items-center gap-4">
+                        <div id="captchaQuestion" class="text-sm font-bold text-slate-600 bg-white px-3 py-2 rounded border border-slate-300 min-w-[100px] text-center">
+                            Chargement...
+                        </div>
+                        <input type="number" id="captchaInput" required placeholder="?" class="w-full px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-un-blue bg-white transition">
                     </div>
                 </div>
 
@@ -75,6 +84,15 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
+            // Charger le captcha
+            try {
+                const captchaRes = await fetch('/api/admin/captcha');
+                const captchaData = await captchaRes.json();
+                document.getElementById('captchaQuestion').innerText = captchaData.question;
+            } catch (e) {
+                document.getElementById('captchaQuestion').innerText = 'Erreur captcha';
+            }
+
             // Vérifier si déjà connecté
             try {
                 const res = await fetch('/api/admin/verify');
@@ -82,10 +100,10 @@
                     window.location.href = '/dashboard';
                 }
             } catch (e) {}
-
+    
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
         });
-
+    
         async function handleLogin(e) {
             e.preventDefault();
             
@@ -96,26 +114,27 @@
             submitBtn.disabled = true;
             spinner.classList.remove('hidden');
             alertBox.classList.add('hidden');
-
+    
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-
+            const captcha = document.getElementById('captchaInput').value;
+    
             try {
                 const res = await fetch('/api/admin/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ username, password, captcha })
                 });
-
+    
                 const data = await res.json();
-
+    
                 if (!res.ok) {
                     throw new Error(data.error || 'Connexion échouée.');
                 }
-
+    
                 // Succès - redirection vers le tableau de bord
                 window.location.href = '/dashboard';
-
+    
             } catch (err) {
                 document.getElementById('alertMsg').innerText = err.message;
                 alertBox.classList.remove('hidden');
@@ -123,6 +142,7 @@
                 spinner.classList.add('hidden');
             }
         }
+
     </script>
 </body>
 </html>

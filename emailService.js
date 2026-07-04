@@ -200,9 +200,50 @@ async function sendRejectionEmail(candidate, reason) {
     return await sendEmail(candidate.email, subject, html, candidate.id, 'rejection');
 }
 
+// Email de vérification de compte
+async function sendVerificationEmail(admin, token) {
+    const verificationUrl = `${process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000'}/api/admin/verify-email?token=${token}`;
+    const subject = `[ONU] Vérification de votre compte administrateur`;
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body { font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; }
+            .header { background: #009edb; color: white; padding: 30px; text-align: center; }
+            .body { padding: 30px; text-align: center; }
+            .btn { display: inline-block; padding: 15px 25px; background: #009edb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; margin: 20px 0; }
+            .footer { background: #f8f8f8; padding: 20px; text-align: center; font-size: 12px; color: #666; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Vérification de Compte</h1>
+                <p>Organisation des Nations Unies</p>
+            </div>
+            <div class="body">
+                <h2>Bienvenue, ${admin.full_name}</h2>
+                <p>Pour activer votre accès administrateur, veuillez cliquer sur le bouton ci-dessous :</p>
+                <a href="${verificationUrl}" class="btn">Vérifier mon compte</a>
+                <p>Ce lien expirera dans 24 heures.</p>
+            </div>
+            <div class="footer">
+                <p>© ${new Date().getFullYear()} ONU. Tous droits réservés.</p>
+            </div>
+        </div>
+    </body>
+    </html>`;
+
+    return await sendEmail(admin.email, subject, html, null, 'verification');
+}
+
 module.exports = {
     sendEmail,
     sendAcknowledgmentEmail,
     sendAcceptanceEmail,
-    sendRejectionEmail
+    sendRejectionEmail,
+    sendVerificationEmail
 };

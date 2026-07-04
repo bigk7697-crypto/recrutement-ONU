@@ -7,6 +7,8 @@ const { Server } = require('socket.io');
 const multer = require('multer');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
+const { sendVerificationEmail } = require('./emailService');
 require('dotenv').config();
 
 // Empêcher le crash de Cloudinary si CLOUDINARY_URL est mal configuré
@@ -53,15 +55,37 @@ app.get('/dashboard', (req, res) => res.sendFile(path.join(__dirname, 'public', 
 app.get('/admin/jobs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'jobs_admin.html')));
 app.get('/admin/settings', (req, res) => res.sendFile(path.join(__dirname, 'public', 'settings_admin.html')));
 
+// Captcha simple : on génère un problème mathématique stocké en session/cookie
+app.get('/api/admin/captcha', (req, res) => {
+    const a = Math.floor(Math.random() * 10) + 1;
+    const b = Math.floor(Math.random() * 10) + 1;
+    const result = a + b;
+    
+    // On stocke le résultat dans un cookie chiffré ou simple pour cet exemple
+    res.cookie('captcha_res', result.toString(), { httpOnly: true });
+    res.json({ question: `${a} + ${b} = ?` });
+});
+
 // API Admin Auth
 app.post('/api/admin/login', async (req, res) => {
-    const { username, password } = req.body;
+    const { username, password, captcha } = req.body;
+    
+    // Vérification Captcha
+    const storedCaptcha = req.cookies.captcha_res;
+    if (!storedCaptcha || parseInt(captcha) !== parseInt(storedCaptcha)) {
+        return res.status(400).json({ error: 'Captcha incorrect' });
+    }
+
     try {
         const result = await pool.query('SELECT * FROM admins WHERE username = $1 OR email = $1', [username]);
         const admin = result.rows[0];
 
         if (!admin || !(await bcrypt.compare(password, admin.password))) {
             return res.status(401).json({ error: 'Identifiants incorrects' });
+        }
+
+        if (!admin.is_verified) {
+            return res.status(403).json({ error: 'Votre compte n\'est pas encore vérifié. Veuillez consulter vos emails.' });
         }
 
         const token = jwt.sign({ id: admin.id, username: admin.username }, JWT_SECRET, { expiresIn: '24h' });
@@ -81,6 +105,46 @@ app.get('/api/admin/verify', (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(401).json({ error: 'Session expirée' });
+    }
+});
+
+// Route de création du premier admin (SÉCURISÉE par un token)
+app.post('/api/admin/setup', async (req, res) => {
+    const { username, password, email, full_name, setupToken } = req.body;
+    
+    if (setupToken !== process.env.ADMIN_SETUP_TOKEN) {
+        return res.status(403).json({ error: 'Token de configuration invalide' });
+    }
+
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const vToken = crypto.randomBytes(32).toString('hex');
+        
+        await pool.query(
+            'INSERT INTO admins (username, password, email, full_name, verification_token) VALUES ($1, $2, $3, $4, $5)',
+            [username, hashedPassword, email, full_name, vToken]
+        );
+
+        const admin = { email, full_name };
+        await sendVerificationEmail(admin, vToken);
+
+        res.json({ success: true, message: 'Compte créé. Veuillez vérifier vos emails pour activer le compte.' });
+    } catch (err) {
+        res.status(500).json({ error: 'L\'utilisateur existe déjà ou erreur serveur' });
+    }
+});
+
+// Vérification de l'email
+app.get('/api/admin/verify-email', async (req, res) => {
+    const { token } = req.query;
+    try {
+        const result = await pool.query('SELECT * FROM admins WHERE verification_token = $1', [token]);
+        if (result.rows.length === 0) return res.status(400).send('Lien de vérification invalide.');
+
+        await pool.query('UPDATE admins SET is_verified = TRUE, verification_token = NULL WHERE id = $1', [result.rows[0].id]);
+        res.send('<h1>✅ Compte vérifié avec succès ! Vous pouvez maintenant vous connecter.</h1>');
+    } catch (err) {
+        res.status(500).send('Erreur serveur.');
     }
 });
 
