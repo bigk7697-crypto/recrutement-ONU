@@ -6,6 +6,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 const multer = require('multer');
 require('dotenv').config();
+
+// Empêcher le crash de Cloudinary si CLOUDINARY_URL est mal configuré
+if (process.env.CLOUDINARY_URL && !process.env.CLOUDINARY_URL.startsWith('cloudinary://')) {
+    delete process.env.CLOUDINARY_URL;
+}
+
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const { pool } = require('./database'); // Utilisation de pg pool
