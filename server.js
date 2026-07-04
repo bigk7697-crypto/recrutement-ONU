@@ -182,6 +182,10 @@ app.post('/api/apply', uploadCandidates.fields([
         const data = req.body;
         const files = req.files;
 
+        if (!data.first_name || !data.last_name || !data.email) {
+            return res.status(400).json({ error: 'Veuillez remplir les champs obligatoires (Nom, Prénom, Email).' });
+        }
+
         const reference_number = `UN-${new Date().getFullYear()}-${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
         
         const cv_filename = files?.cv ? files.cv[0].path : null;
@@ -197,42 +201,13 @@ app.post('/api/apply', uploadCandidates.fields([
             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
             RETURNING id`;
 
+        const expYears = parseInt(data.experience_years) || 0;
+        const offerId = data.offer_id ? parseInt(data.offer_id) : null;
+
         const values = [
             reference_number, data.first_name, data.last_name, data.email, data.phone, data.whatsapp,
-            data.profession, data.country, data.city, data.education, data.experience, parseInt(data.experience_years),
-            data.skills, data.languages, data.certifications, data.motivation_letter,
-            cv_filename, diploma_filename, cert_filename, data.offer_id || null
-        ];
-
-        const result = await pool.query(query, values);
-        const candidateId = result.rows[0].id;
-
-        // --- ANALYSE AUTOMATIQUE DU CANDIDAT ---
-        const analysis = analyzeCandidate({
-            education: data.education,
-            experience: data.experience,
-            skills: data.skills,
-            languages: data.languages,
-            motivation_letter: data.motivation_letter
-        });
-        await updateCandidateScore(candidateId, analysis);
-
-        // Envoyer l'email de confirmation en arrière-plan
-        const { sendAcknowledgmentEmail } = require('./emailService');
-        sendAcknowledgmentEmail({ 
-            id: candidateId, 
-            first_name: data.first_name, 
-            last_name: data.last_name, 
-            email: data.email, 
-            reference_number 
-        }).catch(err => console.error('Email Ack Error:', err));
-
-        res.json({ success: true, reference_number });
-    } catch (err) {
-        console.error('Apply Error:', err);
-        res.status(500).json({ error: 'Erreur lors de l\'enregistrement de votre candidature.' });
-    }
-});
+            data.profession, data.country, data.city, data.education, data.experience, expYears,
+            data.skills, data.languages, data.certifications, data.motivation_//...
 
 // API Jobs
 app.get('/api/jobs', (req, res) => {
