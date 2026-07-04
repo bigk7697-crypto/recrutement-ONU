@@ -191,7 +191,7 @@ async function startServer() {
 
         await pool.query(
             `INSERT INTO admins (username, password, email, full_name, role, status, is_verified) 
-             VALUES ($1, $2, $3, $4, $5, $6) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7) 
              ON CONFLICT (email) DO UPDATE SET password = $2`,
             ['superadmin', hashedPass, adminEmail, 'Maxime SuperAdmin', 'super_admin', 'active', true]
         );
