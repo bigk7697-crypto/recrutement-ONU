@@ -374,6 +374,19 @@
                 if (!res.ok) {
                     throw new Error(data.error || 'Une erreur est survenue lors du dépôt de votre dossier.');
                 }
+                
+                // Masquer le formulaire, afficher le succès
+                document.getElementById('applyForm').classList.add('hidden');
+                document.getElementById('successScreen').classList.remove('hidden');
+                document.getElementById('refNumberPlaceholder').innerText = data.reference_number;
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (err) {
+                // On affiche l'erreur détaillée si elle existe
+                showAlert(err.message, 'error');
+                submitBtn.disabled = false;
+                spinner.classList.add('hidden');
+            }
+
 
                 // Masquer le formulaire, afficher le succès
                 document.getElementById('applyForm').classList.add('hidden');
