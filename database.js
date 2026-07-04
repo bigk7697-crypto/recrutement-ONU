@@ -15,6 +15,16 @@ async function initDb() {
         `CREATE TABLE IF NOT EXISTS email_logs (id SERIAL PRIMARY KEY, candidate_id INTEGER, type TEXT, recipient TEXT, subject TEXT, body TEXT, status TEXT, sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`
     ];
     for (let q of queries) await pool.query(q);
+
+    // Migration : S'assurer que les nouvelles colonnes existent pour les installations existantes
+    try {
+        await pool.query(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'admin'`);
+        await pool.query(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'`);
+        await pool.query(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT FALSE`);
+        await pool.query(`ALTER TABLE admins ADD COLUMN IF NOT EXISTS verification_token TEXT`);
+    } catch (err) {
+        console.log('Schema update: some columns already existed or update failed');
+    }
 }
 
 async function getSetting(key) {
