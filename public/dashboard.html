@@ -577,7 +577,7 @@
                 document.getElementById('docLinks').innerHTML = docs.map(d => `
                     <a href="/api/admin/candidates/${id}/document/${d.type}" target="_blank" class="flex items-center justify-between p-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 hover:border-un-blue hover:text-un-blue transition">
                         <span><i class="fa-solid fa-file-pdf mr-2 text-red-500"></i>${d.label}</span>
-                        <i class="fa-solid fa-download text-gray-400"></i>
+                        <i class="fa-solid fa-eye text-gray-400"></i>
                     </a>
                 `).join('') || '<p class="text-xs text-gray-400 text-center">Aucun document joint</p>';
 

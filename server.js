@@ -318,7 +318,10 @@ app.get('/api/admin/candidates/:id/document/:type', isAdmin, async (req, res) =>
         const docMap = { cv: 'cv_filename', diploma: 'diploma_filename', cert: 'cert_filename' };
         const file = c[docMap[req.params.type]];
         if (!file) return res.status(404).json({ error: 'Document absent' });
-        res.redirect(file);
+        if (file.startsWith('http')) {
+            return res.redirect(file);
+        }
+        res.sendFile(path.join(__dirname, file));
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
