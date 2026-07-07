@@ -93,6 +93,13 @@ async function initDb() {
         )`
     ];
     for (let q of queries) await pool.query(q);
+
+    // Migration: Add photo_filename if it doesn't exist
+    try {
+        await pool.query(`ALTER TABLE candidates ADD COLUMN IF NOT EXISTS photo_filename TEXT`);
+    } catch (err) {
+        console.error('Migration error (photo_filename):', err);
+    }
 }
 
 async function getSetting(key) {
