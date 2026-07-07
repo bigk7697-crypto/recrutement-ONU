@@ -100,4 +100,4 @@ async function getSetting(key) {
     return result.rows.length > 0 ? result.rows[0].setting_value : null;
 }
 
-module.exports = { pool, query, run, initDb, getSetting };
+module.exports = { pool: { query, run }, initDb, getSetting };
