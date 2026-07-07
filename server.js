@@ -114,7 +114,7 @@ app.post('/api/admin/login', async (req, res) => {
         return res.status(400).json({ error: 'Captcha incorrect' });
     }
     try {
-        const result = await pool.query('SELECT * FROM admins WHERE username = ? OR email = ?', [username, username]);
+        const result = await pool.query('SELECT * FROM admins WHERE username = $1 OR email = $2', [username, username]);
         const admin = result.rows[0];
         if (!admin || !(await bcrypt.compare(password, admin.password))) {
             return res.status(401).json({ error: 'Identifiants incorrects' });
@@ -133,7 +133,7 @@ app.post('/api/admin/logout', (req, res) => {
 
 app.get('/api/admin/verify', isAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT username, full_name, role FROM admins WHERE id = ?', [req.admin.id]);
+        const result = await pool.query('SELECT username, full_name, role FROM admins WHERE id = $1', [req.admin.id]);
         if (result.rows.length === 0) return res.status(401).json({ error: 'Utilisateur non trouvé' });
         res.json({ success: true, admin: result.rows[0] });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -149,7 +149,7 @@ app.get('/api/admin/manage/list', isSuperAdmin, async (req, res) => {
 app.put('/api/admin/manage/status', isSuperAdmin, async (req, res) => {
     const { adminId, status } = req.body;
     try {
-        await pool.run('UPDATE admins SET status = ? WHERE id = ?', [status, adminId]);
+        await pool.run('UPDATE admins SET status = $1 WHERE id = $2', [status, adminId]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -175,7 +175,7 @@ app.post('/api/apply', uploadCandidates.fields([{ name: 'cv', maxCount: 1 }, { n
         const dip = files?.diploma ? files.diploma[0].path : null;
         const cert = files?.cert ? files.cert[0].path : null;
         const photo = files?.photo ? files.photo[0].path : null;
-        const query = `INSERT INTO candidates (reference_number, first_name, last_name, email, phone, whatsapp, profession, country, city, education, experience, experience_years, skills, languages, certifications, motivation_letter, cv_filename, diploma_filename, cert_filename, photo_filename, offer_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        const query = `INSERT INTO candidates (reference_number, first_name, last_name, email, phone, whatsapp, profession, country, city, education, experience, experience_years, skills, languages, certifications, motivation_letter, cv_filename, diploma_filename, cert_filename, photo_filename, offer_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)`;
         const result = await pool.run(query, [ref, data.first_name, data.last_name, data.email, data.phone, data.whatsapp, data.profession, data.country, data.city, data.education, data.experience, parseInt(data.experience_years) || 0, data.skills, data.languages, data.certifications, data.motivation_letter, cv, dip, cert, photo, data.offer_id ? parseInt(data.offer_id) : null]);
         const id = result.lastID;
         const analysis = analyzeCandidate({ education: data.education, experience: data.experience, skills: data.skills, languages: data.languages, motivation_letter: data.motivation_letter });
@@ -193,7 +193,7 @@ app.get('/api/jobs', (req, res) => {
 });
 
 app.get('/api/jobs/:id', (req, res) => {
-    pool.query(`SELECT * FROM job_offers WHERE id = ? AND status = 'active'`, [req.params.id], (err, result) => {
+    pool.query(`SELECT * FROM job_offers WHERE id = $1 AND status = 'active'`, [req.params.id], (err, result) => {
         if (err) return res.status(500).json({ error: err.message });
         if (result.rows.length === 0) return res.status(404).json({ error: 'Offre non trouvée' });
         res.json(result.rows[0]);
@@ -208,7 +208,7 @@ app.post('/api/admin/jobs', isAdmin, async (req, res) => {
         }
         const result = await pool.run(
             `INSERT INTO job_offers (title, department, location, type, description, requirements, salary_range, deadline, status) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
             [title, department, location, type, description, requirements, salary_range, deadline, status || 'active']
         );
         res.json({ success: true, job: { id: result.lastID, ...req.body } });
@@ -219,7 +219,7 @@ app.put('/api/admin/jobs/:id', isAdmin, async (req, res) => {
     try {
         const { title, department, location, type, description, requirements, salary_range, deadline, status } = req.body;
         await pool.run(
-            `UPDATE job_offers SET title=?, department=?, location=?, type=?, description=?, requirements=?, salary_range=?, deadline=?, status=? WHERE id=?`,
+            `UPDATE job_offers SET title=$1, department=$2, location=$3, type=$4, description=$5, requirements=$6, salary_range=$7, deadline=$8, status=$9 WHERE id=$10`,
             [title, department, location, type, description, requirements, salary_range, deadline, status, req.params.id]
         );
         res.json({ success: true });
@@ -228,14 +228,14 @@ app.put('/api/admin/jobs/:id', isAdmin, async (req, res) => {
 
 app.delete('/api/admin/jobs/:id', isAdmin, async (req, res) => {
     try {
-        await pool.run('DELETE FROM job_offers WHERE id = ?', [req.params.id]);
+        await pool.run('DELETE FROM job_offers WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/admin/jobs/:id/duplicate', isAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM job_offers WHERE id = ?', [req.params.id]);
+        const result = await pool.query('SELECT * FROM job_offers WHERE id = $1', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Offre non trouvée' });
         const job = result.rows[0];
         const { id, created_at } = job; // Remove id and date
@@ -244,7 +244,7 @@ app.post('/api/admin/jobs/:id/duplicate', isAdmin, async (req, res) => {
         delete duplicateJob.created_at;
         
         const fields = Object.keys(duplicateJob).join(', ');
-        const placeholders = Object.values(duplicateJob).map((_, i) => '?').join(', ');
+        const placeholders = Object.values(duplicateJob).map((_, i) => '$' + (i + 1)).join(', ');
         const query = `INSERT INTO job_offers (${fields}) VALUES (${placeholders})`;
         
         const insertResult = await pool.run(query, Object.values(duplicateJob));
@@ -264,8 +264,12 @@ app.get('/api/admin/candidates', isAdmin, async (req, res) => {
     try {
         let q = `SELECT c.*, j.title as job_title FROM candidates c LEFT JOIN job_offers j ON c.offer_id = j.id WHERE 1=1`;
         const v = [];
-        if (search) { v.push(`%${search}%`); q += ` AND (c.first_name LIKE ? OR c.last_name LIKE ? OR c.profession LIKE ?)`; v.push(`%${search}%`, `%${search}%`); }
-        if (status && status !== 'all') { v.push(status); q += ` AND c.status = ?`; }
+        if (search) { v.push(`%${search}%`); q += ` AND (c.first_name LIKE $1 OR c.last_name LIKE $2 OR c.profession LIKE $3)`; v.push(`%${search}%`, `%${search}%`); }
+        if (status && status !== 'all') { 
+            v.push(status); 
+            const index = v.length;
+            q += ` AND c.status = $${index}`; 
+        }
         q += ` ORDER BY c.created_at DESC`;
         const result = await pool.query(q, v);
         res.json(result.rows);
@@ -274,7 +278,7 @@ app.get('/api/admin/candidates', isAdmin, async (req, res) => {
 
 app.get('/api/admin/candidates/:id', isAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM candidates WHERE id = ?', [req.params.id]);
+        const result = await pool.query('SELECT * FROM candidates WHERE id = $1', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Candidat non trouvé' });
         const c = result.rows[0];
         const analysis = analyzeCandidate({ education: c.education, experience: c.experience, skills: c.skills, languages: c.languages, motivation_letter: c.motivation_letter });
@@ -284,7 +288,7 @@ app.get('/api/admin/candidates/:id', isAdmin, async (req, res) => {
 
 app.post('/api/admin/candidates/:id/status', isAdmin, async (req, res) => {
     try {
-        await pool.run('UPDATE candidates SET status = ? WHERE id = ?', [req.body.status, req.params.id]);
+        await pool.run('UPDATE candidates SET status = $1 WHERE id = $2', [req.body.status, req.params.id]);
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
@@ -292,13 +296,13 @@ app.post('/api/admin/candidates/:id/status', isAdmin, async (req, res) => {
 app.post('/api/admin/candidates/:id/respond', isAdmin, async (req, res) => {
     const { channel, subject, message } = req.body;
     try {
-        const result = await pool.query('SELECT email FROM candidates WHERE id = ?', [req.params.id]);
+        const result = await pool.query('SELECT email FROM candidates WHERE id = $1', [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Candidat non trouvé' });
         if (channel === 'email') {
             const { sendEmail } = require('./emailService');
             await sendEmail(result.rows[0].email, subject || 'Réponse ONU', message, req.params.id, 'admin_response');
         } else {
-            await pool.run(`INSERT INTO email_logs (candidate_id, type, recipient, subject, body, status) VALUES (?, ?, ?, ?, ?, 'simulated')`, [req.params.id, channel, result.rows[0].email, subject || 'Response', message]);
+            await pool.run(`INSERT INTO email_logs (candidate_id, type, recipient, subject, body, status) VALUES ($1, $2, $3, $4, $5, 'simulated')`, [req.params.id, channel, result.rows[0].email, subject || 'Response', message]);
         }
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -306,7 +310,7 @@ app.post('/api/admin/candidates/:id/respond', isAdmin, async (req, res) => {
 
 app.get('/api/admin/candidates/:id/document/:type', isAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT cv_filename, diploma_filename, cert_filename FROM candidates WHERE id = ?', [req.params.id]);
+        const result = await pool.query('SELECT cv_filename, diploma_filename, cert_filename FROM candidates WHERE id = $1', [req.params.id]);
         const c = result.rows[0];
         if (!c) return res.status(404).json({ error: 'Candidat non trouvé' });
         const docMap = { cv: 'cv_filename', diploma: 'diploma_filename', cert: 'cert_filename' };
@@ -318,7 +322,7 @@ app.get('/api/admin/candidates/:id/document/:type', isAdmin, async (req, res) =>
 
 app.get('/api/admin/candidates/:id/download', isAdmin, async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM candidates WHERE id = ?', [req.params.id]);
+        const result = await pool.query('SELECT * FROM candidates WHERE id = $1', [req.params.id]);
         const c = result.rows[0];
         if (!c) return res.status(404).json({ error: 'Candidat non trouvé' });
 
@@ -390,7 +394,7 @@ app.put('/api/admin/config', (req, res) => res.json({ success: true }));
 
 app.get('/api/status/:ref', async (req, res) => {
     try {
-        const result = await pool.query(`SELECT c.*, j.title as job_title FROM candidates c LEFT JOIN job_offers j ON c.offer_id = j.id WHERE c.reference_number = ?`, [req.params.ref]);
+        const result = await pool.query(`SELECT c.*, j.title as job_title FROM candidates c LEFT JOIN job_offers j ON c.offer_id = j.id WHERE c.reference_number = $1`, [req.params.ref]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Référence introuvable' });
         res.json(result.rows[0]);
     } catch (err) { res.status(500).json({ error: err.message }); }
@@ -411,9 +415,9 @@ async function startServer() {
         const adminEmail = 'admin@un.org';
         const adminPass = 'admin123';
         const hashedPass = await bcrypt.hash(adminPass, 10);
-        const check = await pool.query('SELECT id FROM admins WHERE email = ?', [adminEmail]);
+        const check = await pool.query('SELECT id FROM admins WHERE email = $1', [adminEmail]);
         if (check.rows.length === 0) {
-            await pool.run(`INSERT INTO admins (username, password, email, full_name, role, status, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)`, ['admin', hashedPass, adminEmail, 'System Admin', 'super_admin', 'active', true]);
+            await pool.run(`INSERT INTO admins (username, password, email, full_name, role, status, is_verified) VALUES ($1, $2, $3, $4, $5, $6, $7)`, ['admin', hashedPass, adminEmail, 'System Admin', 'super_admin', 'active', true]);
         }
         
         let appConfig = {};

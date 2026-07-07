@@ -222,8 +222,8 @@ function analyzeCandidate(candidateData) {
 // Mettre à jour le score d'un candidat dans la base
 async function updateCandidateScore(candidateId, analysisResult) {
     const result = await pool.run(`UPDATE candidates 
-                    SET score = ?, status = ?, analyzed_at = CURRENT_TIMESTAMP 
-                    WHERE id = ?`, 
+                    SET score = $1, status = $2, analyzed_at = CURRENT_TIMESTAMP 
+                    WHERE id = $3`, 
                 [analysisResult.totalScore, analysisResult.recommendation, candidateId]);
     return result.changes;
 }
