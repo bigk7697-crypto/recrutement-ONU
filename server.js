@@ -33,7 +33,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
     });
     storage = new CloudinaryStorage({
         cloudinary: cloudinary,
-        params: { folder: 'onu_recruitment', format: async (req, file) => 'pdf' },
+        params: { folder: 'onu_recruitment', format: async (req, file) => 'pdf', type: 'upload' },
     });
     console.log('✅ Cloudinary storage configured');
 } else {
