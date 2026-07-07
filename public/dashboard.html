@@ -40,11 +40,12 @@
                 <i class="fa-solid fa-gear"></i> <span>Paramètres</span>
             </a>
         </nav>
-        <div class="p-4 border-t border-slate-800">
-            <button onclick="logout()" class="w-full flex items-center space-x-3 p-3 rounded-lg text-red-400 hover:bg-red-900/20 transition">
-                <i class="fa-solid fa-right-from-bracket"></i> <span>Déconnexion</span>
-            </button>
-        </div>
+            <div class="p-4 border-t border-slate-800">
+                <button onclick="logout()" class="w-full flex items-center space-x-3 p-3 rounded-lg text-red-400 hover:bg-red-900/20 transition" title="Déconnexion du compte administrateur" aria-label="Déconnexion">
+                    <i class="fa-solid fa-right-from-bracket"></i> <span>Déconnexion</span>
+                </button>
+            </div>
+
     </aside>
 
     <!-- Main Content Area -->
@@ -53,11 +54,11 @@
         <header class="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between shrink-0">
             <h2 class="text-xl font-bold text-gray-800">Gestion des Candidatures</h2>
             <div class="flex items-center space-x-4">
-                <button onclick="openGuide()" class="text-xs font-semibold text-gray-500 hover:text-un-blue transition flex items-center">
+                <button onclick="openGuide()" class="text-xs font-semibold text-gray-500 hover:text-un-blue transition flex items-center" title="Ouvrir le guide d'utilisation" aria-label="Guide d'utilisation">
                     <i class="fa-solid fa-circle-question mr-1.5"></i> Guide d'utilisation
                 </button>
                 <div class="relative">
-                    <button id="notifBtn" class="p-2 text-gray-500 hover:text-un-blue transition relative">
+                    <button id="notifBtn" class="p-2 text-gray-500 hover:text-un-blue transition relative" title="Voir les notifications" aria-label="Notifications">
                         <i class="fa-solid fa-bell text-xl"></i>
                         <span id="notifBadge" class="hidden absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">0</span>
                     </button>
@@ -127,6 +128,7 @@
                             <option value="Entretien programmé">Entretien</option>
                             <option value="Profil retenu">Retenu</option>
                             <option value="Profil non retenu">Refusé</option>
+                            <option value="À réviser">À réviser</option>
                         </select>
                     </div>
                 </div>
@@ -156,15 +158,18 @@
         <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
             <!-- Modal Header -->
             <div class="p-6 border-b border-gray-100 bg-slate-900 text-white flex justify-between items-center">
-                <div class="flex items-center space-x-4">
-                    <div class="h-12 w-12 rounded-full bg-un-blue flex items-center justify-center text-xl font-bold text-white" id="modalInitials">JD</div>
-                    <div>
-                        <h3 class="text-xl font-bold" id="modalCandidateName">Jean Dupont</h3>
-                        <p class="text-xs text-gray-400" id="modalCandidateRef">Réf: UN-2026-XXXXX</p>
-                    </div>
-                </div>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition text-2xl">&times;</button>
-            </div>
+                                <div class="flex items-center space-x-4">
+                                    <div class="h-12 w-12 rounded-full bg-un-blue flex items-center justify-center text-xl font-bold text-white overflow-hidden" id="modalPhoto">
+                                        <span id="modalInitials">JD</span>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-bold" id="modalCandidateName">Jean Dupont</h3>
+                                        <p class="text-xs text-gray-400" id="modalCandidateRef">Réf: UN-2026-XXXXX</p>
+                                    </div>
+                                </div>
+                                 <button onclick="closeModal()" class="text-gray-400 hover:text-white transition text-2xl" title="Fermer la fenêtre" aria-label="Fermer">&times;</button>
+                             </div>
+
 
             <!-- Modal Body -->
             <div class="flex-grow overflow-y-auto p-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -187,11 +192,14 @@
                         </div>
                     </div>
 
-                    <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 text-center">
-                        <p class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Analyse Automatique</p>
-                        <div class="text-4xl font-black text-un-blue mb-2" id="detScore">0/100</div>
-                        <p class="text-xs text-blue-600 font-medium" id="detRecommendation"></p>
-                    </div>
+                        <div class="bg-blue-50 p-6 rounded-xl border border-blue-100 text-center">
+                            <p class="text-xs font-bold text-blue-500 uppercase tracking-widest mb-2">Analyse Automatique</p>
+                            <div class="text-4xl font-black text-un-blue mb-2" id="detScore">0/100</div>
+                            <p class="text-xs text-blue-600 font-medium mb-4" id="detRecommendation"></p>
+                            <a id="downloadZipBtn" href="#" class="inline-flex items-center px-4 py-2 bg-white border border-blue-200 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition shadow-sm">
+                                <i class="fa-solid fa-file-zipper mr-2"></i> Télécharger le dossier ZIP
+                            </a>
+                        </div>
                 </div>
 
                 <!-- Right Column: Professional Details & Actions -->
@@ -241,9 +249,16 @@
                                     <option value="Profil retenu">Profil retenu</option>
                                     <option value="Profil non retenu">Profil non retenu</option>
                                 </select>
-                                <button onclick="updateStatus()" class="px-4 py-2 un-blue text-white rounded-lg text-xs font-bold hover-un-blue transition">Mettre à jour</button>
+                                 <button onclick="updateStatus()" class="px-4 py-2 un-blue text-white rounded-lg text-xs font-bold hover-un-blue transition" title="Mettre à jour le statut du candidat" aria-label="Mettre à jour">Mettre à jour</button>
                             </div>
                         </div>
+                        <div class="bg-white p-6 rounded-xl border border-gray-200">
+                            <h4 class="text-sm font-bold text-gray-800 mb-4">Répondre au candidat</h4>
+                            <button onclick="openResponseModal()" class="w-full py-2 border border-un-blue text-un-blue rounded-lg text-xs font-bold hover:bg-blue-50 transition" title="Rédiger une réponse au candidat" aria-label="Répondre">
+                                <i class="fa-solid fa-paper-plane mr-1.5"></i> Rédiger une réponse
+                            </button>
+                        </div>
+
 
                         <!-- Quick Response -->
                         <div class="bg-white p-6 rounded-xl border border-gray-200">
@@ -271,8 +286,9 @@
         <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
             <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-slate-50">
                 <h3 class="font-bold text-gray-800">Envoyer une réponse</h3>
-                <button onclick="closeResponseModal()" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-            </div>
+                                 <button onclick="closeResponseModal()" class="text-gray-400 hover:text-gray-600 text-2xl" title="Fermer la fenêtre" aria-label="Fermer">&times;</button>
+                             </div>
+
             <form id="responseForm" class="p-6 space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Objet (Optionnel)</label>
@@ -305,9 +321,10 @@
                         </label>
                     </div>
                 </div>
-                <button type="submit" class="w-full py-3 un-blue text-white rounded-lg font-bold text-sm shadow hover-un-blue transition">
-                    Envoyer le message
-                </button>
+                                 <button type="submit" class="w-full py-3 un-blue text-white rounded-lg font-bold text-sm shadow hover-un-blue transition" title="Envoyer le message au candidat" aria-label="Envoyer">
+                                     Envoyer le message
+                                 </button>
+
             </form>
         </div>
     </div>
@@ -340,8 +357,9 @@
                 </section>
             </div>
             <div class="p-6 border-t border-gray-100 flex justify-end">
-                <button onclick="closeGuide()" class="px-6 py-2 bg-slate-800 text-white rounded-lg font-bold text-sm hover:bg-slate-700 transition">J'ai compris</button>
-            </div>
+                                 <button onclick="closeGuide()" class="px-6 py-2 bg-slate-800 text-white rounded-lg font-bold text-sm hover:bg-slate-700 transition" title="Fermer le guide" aria-label="Fermer">J'ai compris</button>
+                             </div>
+
         </div>
     </div>
 
@@ -383,13 +401,11 @@
         function openGuide() {
             document.getElementById('guideModal').classList.remove('hidden');
         }
-
+    
         function closeGuide() {
             document.getElementById('guideModal').classList.add('hidden');
         }
-
-        }
-
+    
         // ============================================
         // SOCKET.IO REAL-TIME
         // ============================================
@@ -502,10 +518,11 @@
                                 <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${statusClass}">${c.status}</span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <button class="text-un-blue hover:text-blue-800 font-bold text-xs transition">Ouvrir <i class="fa-solid fa-arrow-right ml-1"></i></button>
-                            </td>
-                        </tr>
-                    `;
+                                 <button class="text-un-blue hover:text-blue-800 font-bold text-xs transition" title="Ouvrir les détails du candidat" aria-label="Détails">Ouvrir <i class="fa-solid fa-arrow-right ml-1"></i></button>
+                             </td>
+                         </tr>
+                     `;
+
                 }).join('');
             } catch (e) {}
         }
@@ -518,7 +535,18 @@
 
                 document.getElementById('modalCandidateName').innerText = `${c.first_name} ${c.last_name}`;
                 document.getElementById('modalCandidateRef').innerText = `Réf: ${c.reference_number}`;
-                document.getElementById('modalInitials').innerText = `${c.first_name[0]}${c.last_name[0]}`.toUpperCase();
+                
+                const photoEl = document.getElementById('modalPhoto');
+                if (c.photo_filename) {
+                    photoEl.innerHTML = `<img src="${c.photo_filename}" class="h-full w-full object-cover">`;
+                } else {
+                    photoEl.innerHTML = `<span id="modalInitials">${c.first_name[0]}${c.last_name[0]}</span>`;
+                }
+                
+                const initials = `${c.first_name[0]}${c.last_name[0]}`.toUpperCase();
+                if (!c.photo_filename) {
+                    document.getElementById('modalInitials').innerText = initials;
+                }
                 
                 document.getElementById('detEmail').innerText = c.email;
                 document.getElementById('detPhone').innerText = c.phone;
@@ -532,12 +560,15 @@
                 document.getElementById('detLanguages').innerText = c.languages;
                 document.getElementById('detMotivation').innerText = c.motivation_letter || 'Aucune lettre fournie.';
 
-                document.getElementById('detScore').innerText = `${c.score}/100`;
-                document.getElementById('detRecommendation').innerText = c.analysis.education.label + " score: " + c.analysis.education.score + "/" + c.analysis.education.max;
-                // Note: I'll simplify the recommendation text to a general one
-                document.getElementById('detRecommendation').innerText = `Recommandation basée sur le score global de ${c.score}`;
-
-                // Documents
+                        document.getElementById('detScore').innerText = `${c.score}/100`;
+                        
+                        const rec = c.analysis.recommendation || 'Analyse en cours';
+                        document.getElementById('detRecommendation').innerText = `Recommandation : ${rec}`;
+                        
+                        // Update ZIP download link
+                        document.getElementById('downloadZipBtn').href = `/api/admin/candidates/${id}/download`;
+                        
+                        // Documents
                 const docs = [];
                 if (c.cv_filename) docs.push({type: 'cv', label: 'Curriculum Vitae', file: c.cv_filename});
                 if (c.diploma_filename) docs.push({type: 'diploma', label: 'Diplôme', file: c.diploma_filename});
@@ -619,14 +650,15 @@
             document.getElementById('responseForm').reset();
         }
 
-        document.getElementById('responseForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData(this);
-            const body = {
-                channel: formData.get('channel'),
-                subject: formData.get('subject'),
-                message: formData.get('message')
-            };
+         document.getElementById('responseForm').addEventListener('submit', async (e) => {
+             e.preventDefault();
+             const formData = new FormData(e.target);
+             const body = {
+                 channel: formData.get('channel'),
+                 subject: formData.get('subject'),
+                 message: formData.get('message')
+             };
+
 
             try {
                 const res = await fetch(`/api/admin/candidates/${currentCandidateId}/respond`, {
@@ -647,7 +679,7 @@
         }
 
         function logout() {
-            fetch('/api/admin/logout').then(() => window.location.href = '/admin');
+            fetch('/api/admin/logout').then(() => window.location.href = '/recru');
         }
     </script>
 </body>

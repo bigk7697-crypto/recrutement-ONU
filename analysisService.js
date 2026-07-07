@@ -163,18 +163,17 @@ function analyzeField(text, category) {
 
     const textLower = text.toLowerCase();
     let score = 0;
-    let foundKeywords = [];
 
     for (const [keyword, points] of Object.entries(keywords)) {
-        if (textLower.includes(keyword.toLowerCase())) {
+        const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\!]/g, '\\$&');
+        const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'i');
+        if (regex.test(textLower)) {
             if (points > score) {
                 score = points;
             }
-            foundKeywords.push(keyword);
         }
     }
 
-    // Bonus pour la longueur du texte (montre l'effort fourni)
     const wordCount = text.split(/\s+/).length;
     const lengthBonus = Math.min(5, Math.floor(wordCount / 20));
 
@@ -196,14 +195,15 @@ function analyzeCandidate(candidateData) {
     // Déterminer le statut basé sur le score
     let recommendation;
     if (totalScore >= 75) {
-        recommendation = 'strong_accept';
+        recommendation = 'Profil retenu';
     } else if (totalScore >= 55) {
-        recommendation = 'accept';
+        recommendation = 'Profil retenu';
     } else if (totalScore >= 35) {
-        recommendation = 'review';
+        recommendation = 'En attente d\'analyse'; // Or 'À réviser'
     } else {
-        recommendation = 'reject';
+        recommendation = 'Profil non retenu';
     }
+
 
     return {
         scores,
@@ -221,11 +221,11 @@ function analyzeCandidate(candidateData) {
 
 // Mettre à jour le score d'un candidat dans la base
 async function updateCandidateScore(candidateId, analysisResult) {
-    const result = await pool.query(`UPDATE candidates 
-                    SET score = $1, status = $2, analyzed_at = CURRENT_TIMESTAMP 
-                    WHERE id = $3`, 
+    const result = await pool.run(`UPDATE candidates 
+                    SET score = ?, status = ?, analyzed_at = CURRENT_TIMESTAMP 
+                    WHERE id = ?`, 
                 [analysisResult.totalScore, analysisResult.recommendation, candidateId]);
-    return result.rowCount;
+    return result.changes;
 }
 
 // Obtenir les statistiques d'analyse

@@ -86,10 +86,10 @@
 
             <!-- Tab Headers -->
             <div class="flex border-b border-gray-100 bg-gray-50 text-xs sm:text-sm font-semibold text-gray-500 overflow-x-auto">
-                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-un-blue text-un-blue whitespace-nowrap" id="tab1" onclick="showStep(1)"><i class="fa-solid fa-user mr-1.5"></i>1. Identité</button>
-                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab2" onclick="showStep(2)"><i class="fa-solid fa-graduation-cap mr-1.5"></i>2. Éducation</button>
-                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab3" onclick="showStep(3)"><i class="fa-solid fa-briefcase mr-1.5"></i>3. Expérience</button>
-                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab4" onclick="showStep(4)"><i class="fa-solid fa-file-arrow-up mr-1.5"></i>4. Documents</button>
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-un-blue text-un-blue whitespace-nowrap" id="tab1" onclick="showStep(1)" title="Aller à l'étape 1 : Identité" aria-label="Étape 1 : Identité"><i class="fa-solid fa-user mr-1.5"></i>1. Identité</button>
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab2" onclick="showStep(2)" title="Aller à l'étape 2 : Éducation" aria-label="Étape 2 : Éducation"><i class="fa-solid fa-graduation-cap mr-1.5"></i>2. Éducation</button>
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab3" onclick="showStep(3)" title="Aller à l'étape 3 : Expérience" aria-label="Étape 3 : Expérience"><i class="fa-solid fa-briefcase mr-1.5"></i>3. Expérience</button>
+                <button type="button" class="flex-1 py-4 px-3 text-center border-b-2 border-transparent whitespace-nowrap" id="tab4" onclick="showStep(4)" title="Aller à l'étape 4 : Documents" aria-label="Étape 4 : Documents"><i class="fa-solid fa-file-arrow-up mr-1.5"></i>4. Documents</button>
             </div>
 
             <!-- STEP 1 : Identité -->
@@ -202,22 +202,26 @@
                     </div>
 
                     <!-- Certifications File -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Copies des certifications mentionnées (Optionnel)</label>
-                        <input type="file" name="cert" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-un-blue hover:file:bg-blue-100 transition">
-                    </div>
+                     <div>
+                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Copies des certifications mentionnées (Optionnel)</label>
+                         <input type="file" name="cert" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-un-blue hover:file:bg-blue-100 transition">
+                     </div>
+                     <div>
+                         <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Photo d'identité <span class="text-red-500">*</span></label>
+                         <input type="file" name="photo" required accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-un-blue hover:file:bg-blue-100 transition">
+                     </div>
                 </div>
             </div>
 
             <!-- Navigation Buttons -->
             <div class="p-6 bg-gray-50 border-t border-gray-100 flex justify-between">
-                <button type="button" id="prevBtn" onclick="navigateStep(-1)" class="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-semibold transition hidden">
+                <button type="button" id="prevBtn" onclick="navigateStep(-1)" class="px-5 py-2.5 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-semibold transition hidden" title="Retourner à l'étape précédente" aria-label="Précédent">
                     <i class="fa-solid fa-chevron-left mr-1.5"></i> Précédent
                 </button>
-                <button type="button" id="nextBtn" onclick="navigateStep(1)" class="px-6 py-2.5 un-blue hover-un-blue text-white rounded-lg text-sm font-semibold transition ml-auto flex items-center">
+                <button type="button" id="nextBtn" onclick="navigateStep(1)" class="px-6 py-2.5 un-blue hover-un-blue text-white rounded-lg text-sm font-semibold transition ml-auto flex items-center" title="Passer à l'étape suivante" aria-label="Suivant">
                     Suivant <i class="fa-solid fa-chevron-right ml-1.5"></i>
                 </button>
-                <button type="submit" id="submitBtn" class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold transition ml-auto flex items-center hidden">
+                <button type="submit" id="submitBtn" class="px-6 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold transition ml-auto flex items-center hidden" title="Soumettre le formulaire de candidature" aria-label="Soumettre">
                     <span id="submitSpinner" class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2 hidden"></span>
                     <i class="fa-solid fa-paper-plane mr-1.5"></i> Soumettre ma candidature
                 </button>
@@ -307,22 +311,26 @@
         }
 
         function navigateStep(direction) {
-            // Validation simple avant d'avancer
             if (direction === 1) {
                 const currentContainer = document.getElementById(`stepContent${currentStep}`);
                 const inputs = currentContainer.querySelectorAll('input[required], textarea[required]');
                 let valid = true;
+                let firstInvalid = null;
+
                 inputs.forEach(input => {
-                    if (!input.value || !input.checkValidity()) {
+                    const value = input.value ? input.value.trim() : '';
+                    if (value === '') {
                         input.classList.add('border-red-500');
                         valid = false;
+                        if (!firstInvalid) firstInvalid = input;
                     } else {
                         input.classList.remove('border-red-500');
                     }
                 });
 
                 if (!valid) {
-                    showAlert('Veuillez remplir correctement tous les champs obligatoires.', 'error');
+                    showAlert('Veuillez remplir tous les champs obligatoires (*).', 'error');
+                    if (firstInvalid) firstInvalid.focus();
                     return;
                 }
                 clearAlert();
@@ -381,25 +389,12 @@
                 document.getElementById('refNumberPlaceholder').innerText = data.reference_number;
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             } catch (err) {
-                // On affiche l'erreur détaillée si elle existe
-                showAlert(err.message, 'error');
-                submitBtn.disabled = false;
-                spinner.classList.add('hidden');
-            }
-
-
-                // Masquer le formulaire, afficher le succès
-                document.getElementById('applyForm').classList.add('hidden');
-                document.getElementById('successScreen').classList.remove('hidden');
-                document.getElementById('refNumberPlaceholder').innerText = data.reference_number;
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-
-            } catch (err) {
                 showAlert(err.message, 'error');
                 submitBtn.disabled = false;
                 spinner.classList.add('hidden');
             }
         }
     </script>
+
 </body>
 </html>

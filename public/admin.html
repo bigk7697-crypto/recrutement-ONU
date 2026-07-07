@@ -16,22 +16,17 @@
 </head>
 <body class="bg-slate-900 flex flex-col justify-between min-h-screen">
 
-    <!-- Top spacer -->
     <div></div>
 
-    <!-- Login Box -->
     <main class="w-full max-w-md mx-auto px-4 py-8">
         <div class="bg-white rounded-2xl shadow-2xl overflow-hidden border border-slate-800">
-            <!-- Header banner with logo -->
             <div class="bg-slate-950 p-8 text-center border-b border-gray-100 flex flex-col items-center">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Flag_of_the_United_Nations.svg" alt="Drapeau de l'ONU" class="h-16 w-auto shadow rounded mb-4">
                 <h1 class="text-white text-xl font-bold tracking-tight">Espace Administrateur Unique</h1>
                 <p class="text-xs text-gray-500 uppercase font-semibold tracking-wider mt-1">Système de Recrutement ONU</p>
             </div>
 
-            <!-- Login Form -->
             <form id="loginForm" class="p-8 space-y-6">
-                <!-- Alerts -->
                 <div id="alertBox" class="hidden p-4 rounded-lg bg-red-50 border border-red-100 text-red-700 text-xs flex items-center gap-2">
                     <i class="fa-solid fa-circle-exclamation text-base"></i>
                     <span id="alertMsg">Identifiants incorrects.</span>
@@ -57,7 +52,6 @@
                     </div>
                 </div>
 
-                <!-- Captcha Section -->
                 <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Vérification de sécurité</label>
                     <div class="flex items-center gap-4">
@@ -68,15 +62,15 @@
                     </div>
                 </div>
 
-                <button type="submit" class="w-full py-3 rounded-lg font-bold un-blue hover-un-blue text-white shadow-lg transition duration-200 text-sm flex items-center justify-center">
-                    <span id="loginSpinner" class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2 hidden"></span>
-                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Connexion Sécurisée
-                </button>
+                 <button type="submit" class="w-full py-3 rounded-lg font-bold un-blue hover-un-blue text-white shadow-lg transition duration-200 text-sm flex items-center justify-center">
+                     <span id="loginSpinner" class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2 hidden"></span>
+                     <i class="fa-solid fa-right-to-bracket mr-2"></i> Connexion Sécurisée
+                 </button>
+
             </form>
         </div>
     </main>
 
-    <!-- Footer -->
     <footer class="py-6 text-center text-xs text-slate-500">
         <p>© 2026 Organisation des Nations Unies. Accès strictement réservé aux personnes autorisées.</p>
         <p class="mt-1">Tout accès non autorisé sera enregistré et poursuivi.</p>
@@ -84,7 +78,6 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            // Charger le captcha
             try {
                 const captchaRes = await fetch('/api/admin/captcha');
                 const captchaData = await captchaRes.json();
@@ -93,7 +86,6 @@
                 document.getElementById('captchaQuestion').innerText = 'Erreur captcha';
             }
 
-            // Vérifier si déjà connecté
             try {
                 const res = await fetch('/api/admin/verify');
                 if (res.ok) {
@@ -129,12 +121,10 @@
                 const data = await res.json();
     
                 if (!res.ok) {
-                    // Rafraîchir le captcha en cas d'erreur
                     await refreshCaptcha();
                     throw new Error(data.error || 'Connexion échouée.');
                 }
     
-                // Succès - redirection vers le tableau de bord
                 window.location.href = '/dashboard';
     
             } catch (err) {
@@ -155,7 +145,6 @@
                 console.error('Captcha refresh failed');
             }
         }
-
     </script>
 </body>
 </html>
