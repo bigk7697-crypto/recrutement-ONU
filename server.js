@@ -187,19 +187,23 @@ app.post('/api/apply', uploadCandidates.fields([{ name: 'cv', maxCount: 1 }, { n
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-app.get('/api/jobs', (req, res) => {
-    pool.query(`SELECT * FROM job_offers WHERE status = 'active' ORDER BY created_at DESC`, (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.get('/api/jobs', async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT * FROM job_offers WHERE status = 'active' ORDER BY created_at DESC`);
         res.json(result.rows);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-app.get('/api/jobs/:id', (req, res) => {
-    pool.query(`SELECT * FROM job_offers WHERE id = $1 AND status = 'active'`, [req.params.id], (err, result) => {
-        if (err) return res.status(500).json({ error: err.message });
+app.get('/api/jobs/:id', async (req, res) => {
+    try {
+        const result = await pool.query(`SELECT * FROM job_offers WHERE id = $1 AND status = 'active'`, [req.params.id]);
         if (result.rows.length === 0) return res.status(404).json({ error: 'Offre non trouvée' });
         res.json(result.rows[0]);
-    });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/api/admin/jobs', isAdmin, async (req, res) => {
